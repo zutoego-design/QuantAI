@@ -1,0 +1,81 @@
+strategy:
+  name: "multifactor_balanced_us"
+  rebalance_frequency: "monthly"
+  risk_monitor_frequency: "daily"
+  benchmark: "^IXIC"
+  min_factor_coverage: 0.80
+
+factor_processing:
+  winsorize:
+    enabled: true
+    lower_quantile: 0.01
+    upper_quantile: 0.99
+  standardization:
+    method: "zscore"
+    by_date: true
+  neutralization:
+    sector: true
+    market_cap: true
+    method: "cross_sectional_regression"
+
+factor_groups:
+  value:
+    weight: 0.30
+    factors:
+      earnings_yield:
+        weight: 0.25
+        direction: 1
+      free_cash_flow_yield:
+        weight: 0.25
+        direction: 1
+      book_to_market:
+        weight: 0.25
+        direction: 1
+      sales_yield:
+        weight: 0.25
+        direction: 1
+  quality:
+    weight: 0.30
+    factors:
+      roe:
+        weight: 0.25
+        direction: 1
+      gross_margin:
+        weight: 0.20
+        direction: 1
+      operating_margin:
+        weight: 0.20
+        direction: 1
+      debt_to_equity:
+        weight: 0.20
+        direction: -1
+      accruals:
+        weight: 0.15
+        direction: -1
+  momentum:
+    weight: 0.25
+    factors:
+      momentum_12_1:
+        weight: 0.50
+        direction: 1
+      momentum_6m:
+        weight: 0.30
+        direction: 1
+      momentum_3m:
+        weight: 0.20
+        direction: 1
+  low_volatility:
+    weight: 0.15
+    factors:
+      realized_vol_60d:
+        weight: 0.35
+        direction: -1
+      realized_vol_252d:
+        weight: 0.35
+        direction: -1
+      beta_to_spy:
+        weight: 0.20
+        direction: -1
+      max_drawdown_252d:
+        weight: 0.10
+        direction: -1

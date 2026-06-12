@@ -1,0 +1,24 @@
+optimizer:
+  enabled: true
+  method: "cvxpy_score_risk_turnover"
+  candidate_count: 100
+  objective:
+    maximize_alpha: true
+    risk_aversion: 5.0
+    turnover_penalty: 1.0
+  constraints:
+    long_only: true
+    fully_invested: true
+    min_weight: 0.0
+    max_weight: 0.05
+    target_num_holdings: 50
+    max_sector_weight: 0.25
+    max_turnover_per_rebalance: 0.30
+    tracking_error_limit: null
+  covariance:
+    method: "historical_shrinkage"
+    lookback_days: 252
+    shrinkage_intensity: 0.20
+  fallback:
+    method: "top_n_equal_weight"
+    top_n: 50

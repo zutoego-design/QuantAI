@@ -1,0 +1,39 @@
+{
+  "label": "legacy-demo-20260612",
+  "status": "legacy-demo",
+  "trusted_for_strategy_decisions": false,
+  "reason": "Current-membership seed universe, synthetic fallback rows, simplified accounting, and incomplete point-in-time coverage.",
+  "captured_at": "2026-06-12T08:35:36.278519+00:00",
+  "artifacts": [
+    {
+      "path": "D:\\QuantAI\\data\\silver\\prices\\prices_daily.parquet",
+      "size": 4227972,
+      "modified": "2026-06-12T07:35:50.354031324",
+      "sha256": "1918d16e8531ed0d5156b0ef44aefe6c1eeb8fd7bc196af40e5dd80974421c0d"
+    },
+    {
+      "path": "D:\\QuantAI\\data\\silver\\fundamentals\\fundamentals_quarterly.parquet",
+      "size": 230489,
+      "modified": "2026-06-12T07:36:23.924788713",
+      "sha256": "b53c1400b0d7aa7fcba03bdb18454c284fd7a20729b4ec429f8da5ad7d59c848"
+    },
+    {
+      "path": "D:\\QuantAI\\data\\silver\\universe\\universe_membership.parquet",
+      "size": 6675,
+      "modified": "2026-06-12T07:37:57.041090727",
+      "sha256": "38f5a9bb5ec7e7bc122679a7b1cc338edcfb5a98f77e36684e3f39edeade429b"
+    },
+    {
+      "path": "D:\\QuantAI\\reports\\backtest\\backtest_metrics.csv",
+      "size": 483,
+      "modified": "2026-06-12T07:48:19.003190041",
+      "sha256": "d56755d97ccddea6f088014378c89a8b7d9b338b6d92160f84474d5b2d2da2c0"
+    },
+    {
+      "path": "D:\\QuantAI\\reports\\backtest\\daily_returns.csv",
+      "size": 389599,
+      "modified": "2026-06-12T07:48:19.001821995",
+      "sha256": "2a9454b473ef7f683767bc541a0b92c636c815ca34fbf27e16506cbf590e8438"
+    }
+  ]
+}

@@ -1,0 +1,18 @@
+check,passed,value,severity
+prices_nonempty,True,97928,error
+fundamentals_nonempty,True,7906,error
+membership_nonempty,True,52,error
+macro_nonempty,True,1903,error
+sector_mapping_coverage,True,1.0,error
+monthly_membership_history,False,0.014598540145985401,error
+synthetic_rows_zero,False,1118,error
+fundamental_available_dates,True,0,error
+primary_benchmark_present,False,^IXIC,error
+secondary_benchmark_present,True,QQQ,error
+secondary_benchmark_complete,False,1,error
+universe_coverage,True,0/2 failed,error
+recent_cross_source_validation,False,"{'month_coverage': 0.0, 'minimum_jaccard': 0.0}",error
+credential_alphavantage_api_key,False,False,error
+credential_massive_api_key,False,False,error
+credential_fred_api_key,False,False,error
+credential_sec_user_agent,False,False,error

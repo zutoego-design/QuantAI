@@ -1,0 +1,38 @@
+universe:
+  name: "nasdaq_operating_equities_pit"
+  market: "US"
+  exchange: "XNAS"
+  base_index_proxy: "^IXIC"
+  seed_metadata_path: "configs/seed_universe.csv"
+  start_date: "2010-01-01"
+  allowed_security_types:
+    - "Common Stock"
+    - "ADR"
+    - "REIT"
+  long_history_provider: "alpha_vantage"
+  validation_provider: "massive"
+  recent_validation_years: 2
+  min_recent_jaccard: 0.95
+  min_recent_price_coverage: 0.98
+  min_long_price_coverage: 0.95
+  min_sector_coverage: 0.90
+  max_remote_requests_per_sync: 25
+  filters:
+    min_market_cap: 2000000000
+    min_price: 5.0
+    min_adv_20d: 5000000
+    min_history_days: 252
+    min_price_data_completeness: 0.90
+    max_price_staleness_days: 7
+  exclude:
+    sectors: []
+    security_types:
+      - "Preferred"
+      - "ETF"
+      - "ETN"
+      - "Fund"
+      - "Closed-End Fund"
+      - "Warrant"
+      - "Unit"
+      - "Test"
+  rebalance_frequency: "monthly"

@@ -1,0 +1,27 @@
+symbol,company_name,exchange,sector,industry,security_type,currency,is_active
+AAPL,Apple Inc.,NASDAQ,Information Technology,Consumer Electronics,Common Stock,USD,true
+MSFT,Microsoft Corporation,NASDAQ,Information Technology,Software - Infrastructure,Common Stock,USD,true
+NVDA,NVIDIA Corporation,NASDAQ,Information Technology,Semiconductors,Common Stock,USD,true
+AMZN,Amazon.com Inc.,NASDAQ,Consumer Discretionary,Internet Retail,Common Stock,USD,true
+GOOGL,Alphabet Inc. Class A,NASDAQ,Communication Services,Internet Content & Information,Common Stock,USD,true
+META,Meta Platforms Inc.,NASDAQ,Communication Services,Internet Content & Information,Common Stock,USD,true
+ORCL,Oracle Corporation,NYSE,Information Technology,Software - Infrastructure,Common Stock,USD,true
+CSCO,Cisco Systems Inc.,NASDAQ,Information Technology,Communication Equipment,Common Stock,USD,true
+COST,Costco Wholesale Corporation,NASDAQ,Consumer Staples,Discount Stores,Common Stock,USD,true
+WMT,Walmart Inc.,NYSE,Consumer Staples,Discount Stores,Common Stock,USD,true
+HD,The Home Depot Inc.,NYSE,Consumer Discretionary,Home Improvement Retail,Common Stock,USD,true
+SBUX,Starbucks Corporation,NASDAQ,Consumer Discretionary,Restaurants,Common Stock,USD,true
+DIS,The Walt Disney Company,NYSE,Communication Services,Entertainment,Common Stock,USD,true
+XOM,Exxon Mobil Corporation,NYSE,Energy,Oil & Gas Integrated,Common Stock,USD,true
+CVX,Chevron Corporation,NYSE,Energy,Oil & Gas Integrated,Common Stock,USD,true
+CAT,Caterpillar Inc.,NYSE,Industrials,Farm & Heavy Construction Machinery,Common Stock,USD,true
+HON,Honeywell International Inc.,NASDAQ,Industrials,Conglomerates,Common Stock,USD,true
+LIN,Linde plc,NASDAQ,Materials,Specialty Chemicals,Common Stock,USD,true
+NEE,NextEra Energy Inc.,NYSE,Utilities,Utilities - Regulated Electric,Common Stock,USD,true
+LLY,Eli Lilly and Company,NYSE,Healthcare,Drug Manufacturers - General,Common Stock,USD,true
+ABBV,AbbVie Inc.,NYSE,Healthcare,Drug Manufacturers - General,Common Stock,USD,true
+MRK,Merck & Co. Inc.,NYSE,Healthcare,Drug Manufacturers - General,Common Stock,USD,true
+JNJ,Johnson & Johnson,NYSE,Healthcare,Drug Manufacturers - General,Common Stock,USD,true
+AMGN,Amgen Inc.,NASDAQ,Healthcare,Biotechnology,Common Stock,USD,true
+JPM,JPMorgan Chase & Co.,NYSE,Financials,Banks - Diversified,Common Stock,USD,true
+PLD,Prologis Inc.,NYSE,Real Estate,REIT - Industrial,Common Stock,USD,true

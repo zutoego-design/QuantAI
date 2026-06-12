@@ -1,0 +1,32 @@
+data_sources:
+  prices:
+    provider: "yfinance"
+    adjusted_prices: true
+    fallback_provider: "stooq"
+    batch_size: 25
+    allow_synthetic_fallback: false
+  fundamentals:
+    provider: "sec_edgar"
+    use_xbrl: true
+    filing_types:
+      - "10-K"
+      - "10-Q"
+    user_agent: "QuantAI Research bot contact@example.com"
+    fallback_to_synthetic: false
+  macro:
+    provider: "fred"
+    api_key_env_var: "FRED_API_KEY"
+  etf:
+    provider: "yfinance"
+    tickers:
+      equity:
+        spy: "SPY"
+        qqq: "QQQ"
+        iwm: "IWM"
+      rates:
+        short_treasury: "SHY"
+        intermediate_treasury: "IEF"
+        long_treasury: "TLT"
+      credit:
+        investment_grade: "LQD"
+        high_yield: "HYG"

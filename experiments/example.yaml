@@ -1,0 +1,29 @@
+hypothesis: "Quality and medium-term momentum improve risk-adjusted Nasdaq returns."
+universe: "nasdaq_operating_equities_pit"
+factors:
+  - roe
+  - gross_margin
+  - momentum_12_1
+  - momentum_6m
+preprocessing:
+  winsorize:
+    enabled: true
+    lower_quantile: 0.01
+    upper_quantile: 0.99
+  neutralization:
+    sector: true
+    market_cap: true
+portfolio:
+  target_num_holdings: 50
+  max_weight: 0.05
+  max_sector_weight: 0.25
+  max_turnover_per_rebalance: 0.30
+costs:
+  commission_bps: 1.0
+  slippage_bps: 5.0
+  market_impact_coefficient: 0.10
+  max_adv_participation: 0.10
+start_date: "2010-01-01"
+end_date: "2026-06-12"
+seed: 42
+max_years: 20

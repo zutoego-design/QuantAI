@@ -1,0 +1,26 @@
+macro:
+  fred_series:
+    cpi: "CPIAUCSL"
+    unemployment: "UNRATE"
+    fed_funds: "FEDFUNDS"
+    ten_year_treasury: "DGS10"
+    two_year_treasury: "DGS2"
+    baa_spread: "BAA10Y"
+  etf_proxies:
+    equity_market: "SPY"
+    long_rates: "TLT"
+    intermediate_rates: "IEF"
+    investment_grade_credit: "LQD"
+    high_yield_credit: "HYG"
+  regime_rules:
+    inflation:
+      lookback_months: 6
+      high_threshold_yoy: 0.03
+    rates:
+      curve_inversion_threshold: 0.0
+    credit:
+      spread_widening_zscore: 1.0
+  usage:
+    affect_portfolio_weights: false
+    display_in_dashboard: true
+    include_in_risk_report: true

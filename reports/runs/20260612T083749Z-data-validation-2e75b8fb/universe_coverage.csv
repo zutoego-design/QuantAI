@@ -1,0 +1,3 @@
+date,gate,value,threshold,passed
+2025-12-31,price_coverage,1.0,0.98,True
+2026-06-05,price_coverage,1.0,0.98,True

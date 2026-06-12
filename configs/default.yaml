@@ -1,0 +1,44 @@
+includes:
+  - configs/data_sources.yaml
+  - configs/universe_us_large_mid.yaml
+  - configs/strategy_multifactor_balanced.yaml
+  - configs/optimizer.yaml
+  - configs/risk_limits.yaml
+  - configs/macro_regime.yaml
+
+project:
+  name: "quant_stock_system"
+  version: "0.2.0"
+  timezone: "America/New_York"
+  base_currency: "USD"
+
+paths:
+  raw_data: "data/raw"
+  silver_data: "data/silver"
+  gold_data: "data/gold"
+  reports: "reports"
+
+runtime:
+  log_level: "INFO"
+  overwrite_existing: false
+  cache_enabled: true
+  research_mode: true
+  allow_synthetic: false
+
+backtest:
+  start_date: "2015-01-01"
+  end_date: null
+  initial_capital: 1000000
+  rebalance_frequency: "monthly"
+  rebalance_execution_lag_days: 1
+  transaction_cost:
+    commission_bps: 1.0
+    slippage_bps: 5.0
+    market_impact_coefficient: 0.10
+    max_adv_participation: 0.10
+  delisting_return_scenarios:
+    - 0.0
+    - -0.30
+    - -1.0
+  primary_benchmark: "^IXIC"
+  secondary_benchmark: "QQQ"

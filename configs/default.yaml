@@ -31,6 +31,8 @@ backtest:
   initial_capital: 1000000
   rebalance_frequency: "monthly"
   rebalance_execution_lag_days: 1
+  execution_price: "close"
+  cash_interest_annual_rate: 0.0
   transaction_cost:
     commission_bps: 1.0
     slippage_bps: 5.0

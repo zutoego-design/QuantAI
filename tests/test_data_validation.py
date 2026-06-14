@@ -17,12 +17,17 @@ def _config(tmp_path):
     return config
 
 
-def _write_validation_inputs(tmp_path):
+def _write_validation_inputs(tmp_path, latest_price_date="2026-06-12"):
     silver = tmp_path / "silver"
     prices = pd.DataFrame(
         {
             "date": pd.to_datetime(
-                ["2016-01-04", "2026-06-12", "2016-01-04", "2026-06-12"]
+                [
+                    "2016-01-04",
+                    latest_price_date,
+                    "2016-01-04",
+                    latest_price_date,
+                ]
             ),
             "symbol": ["^GSPC", "^GSPC", "SPY", "SPY"],
             "return_1d": [pd.NA, 0.01, pd.NA, 0.01],
@@ -125,3 +130,36 @@ def test_monthly_membership_coverage_ignores_out_of_window_months():
 
     assert (observed, expected, coverage) == (3, 3, 1.0)
     assert detail == "3/3 months; missing none"
+
+
+def test_price_cutoff_requires_requested_trading_session(tmp_path):
+    config = _config(tmp_path)
+    _write_validation_inputs(tmp_path, latest_price_date="2026-06-11")
+
+    result = validate_research_data(
+        config,
+        start_date="2026-01-01",
+        end_date="2026-06-12",
+    )
+    check = result.checks.set_index("check").loc["price_data_cutoff"]
+
+    assert result.status == "invalid"
+    assert check["passed"] == False  # noqa: E712
+    assert check["value"] == "2026-06-11"
+    assert "expected_session=2026-06-12" in check["detail"]
+
+
+def test_price_cutoff_accepts_prior_session_for_weekend_request(tmp_path):
+    config = _config(tmp_path)
+    _write_validation_inputs(tmp_path, latest_price_date="2026-06-12")
+
+    result = validate_research_data(
+        config,
+        start_date="2026-01-01",
+        end_date="2026-06-14",
+    )
+    check = result.checks.set_index("check").loc["price_data_cutoff"]
+
+    assert result.status == "valid"
+    assert check["passed"] == True  # noqa: E712
+    assert "expected_session=2026-06-12" in check["detail"]

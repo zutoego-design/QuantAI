@@ -7,6 +7,7 @@ from pathlib import Path
 import pandas as pd
 
 from qss.config.schema import AppConfig
+from qss.data.calendar import latest_expected_us_trading_day
 from qss.data.storage import read_parquet, write_csv
 from qss.runs.manifest import RunContext, create_run_context
 from qss.universe.sync import universe_coverage_report
@@ -120,6 +121,10 @@ def failed_check_summary(checks: pd.DataFrame, limit: int = 6) -> str:
     failed = checks.loc[~checks["passed"].astype(bool)]
     if failed.empty:
         return "no failed checks"
+    if "severity" in failed:
+        failed = failed.assign(
+            _priority=failed["severity"].map({"error": 0, "warning": 1}).fillna(2)
+        ).sort_values("_priority", kind="stable")
     details = []
     for row in failed.head(limit).itertuples(index=False):
         summary = f"{row.check}={row.value}"
@@ -164,11 +169,51 @@ def validate_research_data(
     security_master = read_parquet(
         Path(config.paths.silver_data) / "universe" / "security_master.parquet"
     )
+    filings = read_parquet(
+        Path(config.paths.silver_data) / "events" / "sec_filings.parquet"
+    )
+    corporate_actions_path = (
+        Path(config.paths.silver_data)
+        / "corporate_actions"
+        / "corporate_actions.parquet"
+    )
+    delisting_returns_path = (
+        Path(config.paths.silver_data)
+        / "corporate_actions"
+        / "delisting_returns.parquet"
+    )
     checks: list[dict] = []
     checks.append(_check("prices_nonempty", not prices.empty, len(prices)))
     checks.append(_check("fundamentals_nonempty", not fundamentals.empty, len(fundamentals)))
     checks.append(_check("membership_nonempty", not membership.empty, len(membership)))
     checks.append(_check("macro_nonempty", not macro.empty, len(macro)))
+    checks.append(
+        _check(
+            "macro_vintage_history",
+            "vintage_date" in macro,
+            "available" if "vintage_date" in macro else "unavailable",
+            severity="warning",
+            detail="Use ALFRED or another revision-aware source for confirmatory macro research.",
+        )
+    )
+    checks.append(
+        _check(
+            "corporate_action_ledger",
+            corporate_actions_path.exists(),
+            str(corporate_actions_path),
+            severity="warning",
+            detail="Independent split, dividend, merger, spin-off, and exchange terms are required.",
+        )
+    )
+    checks.append(
+        _check(
+            "exact_delisting_returns",
+            delisting_returns_path.exists(),
+            str(delisting_returns_path),
+            severity="warning",
+            detail="Scenario sensitivity is not a substitute for observed terminal cash flows.",
+        )
+    )
     research_symbols: set[str] = set()
     membership_window = pd.DataFrame()
     if not membership.empty and {"date", "symbol"}.issubset(membership):
@@ -184,6 +229,19 @@ def validate_research_data(
             ]
         research_symbols = set(
             included_membership["symbol"].dropna().astype(str)
+        )
+        stable_id_coverage = (
+            float(included_membership["security_id"].notna().mean())
+            if "security_id" in included_membership and not included_membership.empty
+            else 0.0
+        )
+        checks.append(
+            _check(
+                "stable_security_identifier_coverage",
+                stable_id_coverage >= 0.99,
+                stable_id_coverage,
+                severity="warning",
+            )
         )
     if not security_master.empty:
         sector_frame = security_master
@@ -254,6 +312,32 @@ def validate_research_data(
 
     if not prices.empty:
         prices["date"] = pd.to_datetime(prices["date"]).dt.normalize()
+        expected_price_cutoff = latest_expected_us_trading_day(research_end)
+        benchmark_history = prices.loc[
+            prices["symbol"] == config.backtest.primary_benchmark
+        ]
+        latest_benchmark_date = (
+            benchmark_history["date"].max()
+            if not benchmark_history.empty
+            else pd.NaT
+        )
+        benchmark_sessions = set(benchmark_history["date"])
+        checks.append(
+            _check(
+                "price_data_cutoff",
+                pd.notna(latest_benchmark_date)
+                and expected_price_cutoff in benchmark_sessions,
+                (
+                    str(latest_benchmark_date.date())
+                    if pd.notna(latest_benchmark_date)
+                    else "missing"
+                ),
+                detail=(
+                    f"requested={research_end.date()}; "
+                    f"expected_session={expected_price_cutoff.date()}"
+                ),
+            )
+        )
         if start_date:
             prices = prices.loc[prices["date"] >= pd.Timestamp(start_date)]
         if end_date:
@@ -322,6 +406,24 @@ def validate_research_data(
                 config.universe.long_history_provider,
             )
         )
+        checks.append(
+            _check(
+                "authorized_constituent_history",
+                False,
+                config.universe.long_history_provider,
+                severity="warning",
+                detail="Wikipedia reconstruction is not a licensed constituent master.",
+            )
+        )
+        checks.append(
+            _check(
+                "cross_source_validation_enabled",
+                False,
+                config.universe.validation_provider,
+                severity="warning",
+                detail="Configure a second provider before institutional use.",
+            )
+        )
     else:
         checks.append(
             _check(
@@ -372,21 +474,67 @@ def validate_research_data(
     for name, present in required_research_credentials(config).items():
         checks.append(_check(f"credential_{name.lower()}", present, present))
 
+    eligible_filings = filings
+    if not eligible_filings.empty and "filing_type" in eligible_filings:
+        eligible_filings = eligible_filings.loc[
+            eligible_filings["filing_type"]
+            .astype(str)
+            .isin(config.text_factors.filing_types)
+        ]
+    if not eligible_filings.empty and "filing_timestamp" in eligible_filings:
+        filing_dates = pd.to_datetime(
+            eligible_filings["filing_timestamp"],
+            errors="coerce",
+            utc=True,
+        ).dt.tz_localize(None)
+        eligible_filings = eligible_filings.loc[
+            filing_dates.between(research_start, research_end)
+        ]
+    text_coverage = (
+        float(eligible_filings["text_cached"].fillna(False).astype(bool).mean())
+        if not eligible_filings.empty and "text_cached" in eligible_filings
+        else 0.0
+    )
+    checks.append(
+        _check(
+            "sec_text_history_coverage",
+            text_coverage >= 0.80,
+            text_coverage,
+            severity="warning",
+            detail=f"target=80%; eligible_filings={len(eligible_filings)}",
+        )
+    )
+
     checks_frame = pd.DataFrame(checks)
-    status = "valid" if bool(checks_frame["passed"].all()) else "invalid"
+    blocking_failures = checks_frame.loc[
+        (~checks_frame["passed"].astype(bool))
+        & checks_frame["severity"].eq("error")
+    ]
+    status = "valid" if blocking_failures.empty else "invalid"
     write_csv(checks_frame, context.path("checks.csv"))
     context.update(
         status=status,
         quality_gates={
             row["check"]: bool(row["passed"]) for row in checks_frame.to_dict("records")
         },
-        bias_flags=(
-            ["sp500_point_in_time_wikipedia_reconstruction"]
-            if config.universe.membership_mode == "point_in_time"
-            and config.universe.long_history_provider == "sp500_wikipedia"
-            else ["free_data_long_history_approximate"]
-            if config.universe.membership_mode == "point_in_time"
-            else ["current_membership_backfilled_survivorship_bias"]
-        ),
+        bias_flags=[
+            *(
+                ["sp500_point_in_time_wikipedia_reconstruction"]
+                if config.universe.membership_mode == "point_in_time"
+                and config.universe.long_history_provider == "sp500_wikipedia"
+                else ["free_data_long_history_approximate"]
+                if config.universe.membership_mode == "point_in_time"
+                else ["current_membership_backfilled_survivorship_bias"]
+            ),
+            *(
+                ["single_source_universe_validation"]
+                if config.universe.validation_provider == "disabled"
+                else []
+            ),
+            *(["macro_vintage_history_unavailable"] if "vintage_date" not in macro else []),
+            *(["corporate_action_ledger_unavailable"] if not corporate_actions_path.exists() else []),
+            *(["exact_delisting_returns_unavailable"] if not delisting_returns_path.exists() else []),
+            *(["sec_text_coverage_below_80pct"] if text_coverage < 0.80 else []),
+        ],
     )
     return DataValidationResult(checks_frame, status, context.manifest.run_id, context.root)

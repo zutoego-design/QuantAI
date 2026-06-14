@@ -63,7 +63,7 @@ class YFinancePriceProvider(DataProvider):
         if raw_data.empty:
             return pd.DataFrame(columns=PRICE_COLUMNS)
         frames: list[pd.DataFrame] = []
-        ingestion_time = pd.Timestamp.utcnow().tz_localize(None)
+        ingestion_time = pd.Timestamp.now(tz="UTC").tz_localize(None)
         for symbol in raw_data.columns.get_level_values(0).unique():
             sub = raw_data[symbol].copy()
             if sub.empty:
@@ -240,7 +240,7 @@ def _persist_prices(
         primary_keys=["symbol", "date"],
         as_of_date=pd.Timestamp.today(),
     )
-    timestamp = pd.Timestamp.utcnow().strftime("%Y%m%d_%H%M%S")
+    timestamp = pd.Timestamp.now(tz="UTC").strftime("%Y%m%d_%H%M%S")
     write_parquet(
         prices,
         Path(config.paths.raw_data) / "prices" / f"prices_raw_{timestamp}.parquet",

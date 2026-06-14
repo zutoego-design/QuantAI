@@ -14,6 +14,86 @@ from qss.reporting.service import report_bundle
 from qss.runs.manifest import create_run_context
 
 
+def _research_identity_check(root: Path, manifest: dict) -> dict:
+    environment_path = root / "environment.json"
+    workspace_path = root / "workspace_identity.json"
+    if not environment_path.exists() or not workspace_path.exists():
+        return {
+            "check": "research_identity_frozen",
+            "passed": False,
+            "details": "environment.json or workspace_identity.json is missing",
+        }
+    environment_payload = json.dumps(
+        json.loads(environment_path.read_text(encoding="utf-8")),
+        sort_keys=True,
+        separators=(",", ":"),
+    )
+    environment_hash = hashlib.sha256(
+        environment_payload.encode("utf-8")
+    ).hexdigest()
+    workspace = json.loads(workspace_path.read_text(encoding="utf-8"))
+    patch_path = root / "code.patch"
+    patch_hash = (
+        hashlib.sha256(patch_path.read_bytes()).hexdigest()
+        if patch_path.exists()
+        else None
+    )
+    untracked_complete = True
+    for item in workspace.get("untracked_files", []):
+        saved = root / "untracked_files" / str(item.get("path", ""))
+        if (
+            not saved.exists()
+            or saved.stat().st_size != int(item.get("size", -1))
+            or _file_sha256(saved) != item.get("sha256")
+        ):
+            untracked_complete = False
+            break
+    patch_complete = (
+        workspace.get("patch_sha256") is None
+        or patch_hash == workspace.get("patch_sha256")
+    )
+    dirty_artifacts_complete = (
+        not workspace.get("dirty")
+        or (
+            patch_complete
+            and untracked_complete
+            and (
+                workspace.get("patch_sha256") is not None
+                or bool(workspace.get("untracked_files"))
+            )
+        )
+    )
+    passed = all(
+        [
+            environment_hash == manifest.get("environment_sha256"),
+            workspace.get("version") == manifest.get("code_version"),
+            workspace.get("commit") == manifest.get("code_commit"),
+            bool(workspace.get("dirty")) == bool(manifest.get("code_dirty")),
+            workspace.get("patch_sha256")
+            == manifest.get("code_patch_sha256"),
+            workspace.get("workspace_sha256")
+            == manifest.get("workspace_sha256"),
+            dirty_artifacts_complete,
+        ]
+    )
+    return {
+        "check": "research_identity_frozen",
+        "passed": passed,
+        "details": (
+            f"code={manifest.get('code_version')}; "
+            f"environment={environment_hash}"
+        ),
+    }
+
+
+def _file_sha256(path: Path, chunk_size: int = 1024 * 1024) -> str:
+    digest = hashlib.sha256()
+    with path.open("rb") as stream:
+        while chunk := stream.read(chunk_size):
+            digest.update(chunk)
+    return digest.hexdigest()
+
+
 def _frames_equivalent(
     saved: pd.DataFrame,
     recomputed: pd.DataFrame,
@@ -63,17 +143,20 @@ def _experiment_acceptance_checks(
     from qss.ingestion.fama_french import load_fama_french_daily
     from qss.research.decision import research_evidence_decision
     from qss.research.orchestrator import ExperimentSpec, _factor_evidence
+    from qss.research.snapshot import snapshot_identity_payload
     from qss.research.statistics import (
         block_bootstrap_summary,
         deflated_sharpe_probability,
         fama_french_style_regression,
     )
 
-    checks: list[dict] = []
+    checks: list[dict] = [_research_identity_check(root, manifest)]
     required = [
         "experiment_spec.json",
         "research_protocol.json",
         "data_snapshot.json",
+        "environment.json",
+        "workspace_identity.json",
         "child_runs.json",
         "robustness_matrix.csv",
         "holdout_evaluation/portfolio_metrics.csv",
@@ -81,6 +164,8 @@ def _experiment_acceptance_checks(
         "deflated_sharpe.json",
         "style_factor_exposures.csv",
         "style_factor_summary.json",
+        "factor_diagnostics.csv",
+        "factor_diagnostics_scope.json",
         "factor_evidence.csv",
         "research_decision.json",
         "research_decision.md",
@@ -133,11 +218,7 @@ def _experiment_acceptance_checks(
     )
 
     snapshot = json.loads((root / "data_snapshot.json").read_text(encoding="utf-8"))
-    identity_payload = json.dumps(
-        snapshot.get("files", []),
-        sort_keys=True,
-        separators=(",", ":"),
-    )
+    identity_payload = snapshot_identity_payload(snapshot)
     recomputed_snapshot_id = hashlib.sha256(
         identity_payload.encode("utf-8")
     ).hexdigest()
@@ -147,6 +228,76 @@ def _experiment_acceptance_checks(
             "passed": recomputed_snapshot_id == snapshot.get("snapshot_id")
             == manifest.get("data_snapshot_id"),
             "details": snapshot.get("snapshot_id"),
+        }
+    )
+    snapshot_paths = {
+        str(item.get("path", "")).replace("\\", "/")
+        for item in snapshot.get("files", [])
+    }
+    archives_complete = True
+    for item in snapshot.get("files", []):
+        archive_path = Path(str(item.get("archive_path", "")))
+        if not archive_path.is_absolute():
+            archive_path = resolve_path(archive_path)
+        if (
+            not archive_path.exists()
+            or archive_path.stat().st_size != int(item.get("size", -1))
+            or _file_sha256(archive_path) != item.get("sha256")
+        ):
+            archives_complete = False
+            break
+    checks.append(
+        {
+            "check": "complete_research_snapshot",
+            "passed": all(
+                [
+                    any(
+                        path.endswith("macro/macro_observations.parquet")
+                        for path in snapshot_paths
+                    ),
+                    any("fama_french" in path for path in snapshot_paths),
+                    bool(snapshot.get("environment", {}).get("packages")),
+                    archives_complete,
+                ]
+            ),
+            "details": f"files={len(snapshot_paths)}",
+        }
+    )
+    diagnostic_scope = json.loads(
+        (root / "factor_diagnostics_scope.json").read_text(encoding="utf-8")
+    )
+    holdout_start = pd.Timestamp(protocol["holdout_start"])
+    holdout_end = pd.Timestamp(protocol["holdout_end"])
+    factor_min = pd.to_datetime(
+        diagnostic_scope.get("factor_date_min"),
+        errors="coerce",
+    )
+    factor_max = pd.to_datetime(
+        diagnostic_scope.get("factor_date_max"),
+        errors="coerce",
+    )
+    price_max = pd.to_datetime(
+        diagnostic_scope.get("price_date_max"),
+        errors="coerce",
+    )
+    checks.append(
+        {
+            "check": "factor_evidence_holdout_scope",
+            "passed": all(
+                [
+                    diagnostic_scope.get("evaluation_scope") == "holdout",
+                    pd.notna(factor_min),
+                    pd.notna(factor_max),
+                    pd.notna(price_max),
+                    factor_min >= holdout_start,
+                    factor_max <= holdout_end,
+                    price_max <= holdout_end,
+                ]
+            ),
+            "details": (
+                f"factors={factor_min.date()}..{factor_max.date()}; "
+                f"prices_through={price_max.date()}"
+            ),
         }
     )
 
@@ -181,9 +332,21 @@ def _experiment_acceptance_checks(
     )
 
     robustness = pd.read_csv(root / "robustness_matrix.csv")
+    required_robustness = {
+        "subperiod",
+        "cost_sensitivity",
+        "top_n_sensitivity",
+        "rebalance_day_shift",
+    }
     robustness_ok = (
         not robustness.empty
-        and not robustness["status"].eq("skipped").any()
+        and required_robustness.issubset(set(robustness["test"]))
+        and bool(
+            robustness.loc[
+                robustness["test"].isin(required_robustness),
+                "status",
+            ].eq("valid").all()
+        )
     )
     for row in robustness.itertuples(index=False):
         difference = json.loads(row.config_diff or "{}")
@@ -316,15 +479,7 @@ def _experiment_acceptance_checks(
         }
     )
 
-    full_child = next(
-        child for child in child_runs if child.get("period") == "full"
-    )
-    diagnostics = pd.read_csv(
-        resolve_path(config.paths.reports)
-        / "runs"
-        / full_child["run_id"]
-        / "factor_diagnostics.csv"
-    )
+    diagnostics = pd.read_csv(root / "factor_diagnostics.csv")
     recomputed_evidence, factor_blockers = _factor_evidence(
         diagnostics,
         spec.research_protocol(),
@@ -402,7 +557,9 @@ def run_acceptance_checks(config: AppConfig, run_path: str | Path | None = None)
         return frame, context
 
     bundle = report_bundle(source_root)
-    checks: list[dict] = []
+    checks: list[dict] = [
+        _research_identity_check(source_root, source_manifest)
+    ]
 
     missing = bundle.validate()
     checks.append({"check": "report_bundle_complete", "passed": not missing, "details": str(missing)})
@@ -461,6 +618,20 @@ def run_acceptance_checks(config: AppConfig, run_path: str | Path | None = None)
             "check": "target_holding_count",
             "passed": holdings_ok,
             "details": f"range={minimum_holdings}-{maximum_holdings}",
+        }
+    )
+    declared_execution = (
+        manifest.get("config", {})
+        .get("backtest", {})
+        .get("execution_price")
+    )
+    checks.append(
+        {
+            "check": "execution_model_declared",
+            "passed": declared_execution == "close"
+            and "execution_price_model" in daily
+            and set(daily["execution_price_model"].dropna()) == {"close"},
+            "details": str(declared_execution),
         }
     )
     if protocol.get("stage") == "confirmatory":

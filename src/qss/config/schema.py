@@ -250,6 +250,8 @@ class BacktestConfig(BaseModel):
     initial_capital: float = 1_000_000
     rebalance_frequency: str = "monthly"
     rebalance_execution_lag_days: int = 1
+    execution_price: Literal["close"] = "close"
+    cash_interest_annual_rate: float = Field(default=0.0, ge=-1.0)
     transaction_cost: TransactionCostConfig
     delisting_return_scenarios: list[float] = Field(default_factory=lambda: [0.0, -0.30, -1.0])
     primary_benchmark: str = "^IXIC"

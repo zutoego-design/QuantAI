@@ -19,6 +19,10 @@ def test_run_contexts_are_isolated_and_manifested(tmp_path):
     manifest = json.loads(first.path("manifest.json").read_text(encoding="utf-8"))
     assert manifest["config_hash"]
     assert manifest["status"] == "running"
+    assert manifest["environment_sha256"]
+    assert manifest["code_version"]
+    assert first.path("environment.json").exists()
+    assert first.path("workspace_identity.json").exists()
 
 
 def test_experiment_spec_rejects_reversed_dates():

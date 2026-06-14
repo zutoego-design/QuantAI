@@ -16,6 +16,7 @@ data/raw/
 data/silver/
 data/gold/
 data/quickstart/
+data/archive/
 reports/backtest/
 reports/risk/
 reports/rebalance/

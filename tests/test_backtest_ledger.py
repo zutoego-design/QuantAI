@@ -76,6 +76,8 @@ def test_ledger_weights_drift_with_market_returns():
     day_two = holdings.loc[holdings["date"] == pd.Timestamp("2025-01-02")].set_index("symbol")
     assert day_two.loc["A", "weight"] > 0.5
     assert len(trades) == 2
+    assert set(trades["execution_price_model"]) == {"close"}
+    assert set(daily["execution_price_model"]) == {"close"}
     attributed = (
         attribution.groupby("date")["portfolio_contribution"]
         .sum()
@@ -142,6 +144,32 @@ def test_execution_lag_zero_uses_signal_day():
     assert next_trading_day(pd.Timestamp("2025-01-02"), dates, 0) == pd.Timestamp(
         "2025-01-02"
     )
+
+
+def test_cash_interest_is_accrued_explicitly():
+    config = get_config(["configs/default.yaml"])
+    config.runtime.research_mode = False
+    config.backtest.cash_interest_annual_rate = 0.05
+    config.backtest.transaction_cost.commission_bps = 0
+    config.backtest.transaction_cost.slippage_bps = 0
+    config.backtest.transaction_cost.market_impact_coefficient = 0
+    prices = _prices([np.nan, 0.0])
+    spec = BacktestRunSpec(
+        start_date="2025-01-01",
+        end_date="2025-01-02",
+        initial_capital=1000,
+    )
+
+    daily, _, _, _, _ = _simulate_ledger(
+        spec,
+        config,
+        prices,
+        {},
+        "^IXIC",
+    )
+
+    assert daily["cash_interest"].gt(0).all()
+    assert daily.iloc[-1]["portfolio_value"] > 1000
 
 
 def test_equal_weight_top_n_respects_sector_limit():

@@ -11,6 +11,7 @@ import yaml
 from pydantic import BaseModel, Field, field_validator, model_validator
 
 from qss.backtest.engine import load_backtest_data, run_backtest
+from qss.backtest.metrics import comprehensive_factor_diagnostics
 from qss.config.schema import AppConfig
 from qss.data.storage import resolve_path
 from qss.data.validation import validate_research_data
@@ -96,6 +97,27 @@ class ExperimentSpec(BaseModel):
             if missing:
                 raise ValueError(
                     f"Confirmatory experiments require: {', '.join(missing)}"
+                )
+            required_robustness = {
+                "subperiod",
+                "cost_sensitivity",
+                "top_n_sensitivity",
+                "rebalance_day_shift",
+            }
+            missing_robustness = sorted(
+                required_robustness - set(self.robustness_tests)
+            )
+            if missing_robustness:
+                raise ValueError(
+                    "Confirmatory experiments require robustness tests: "
+                    f"{', '.join(missing_robustness)}"
+                )
+            start_period = pd.Timestamp(self.start_date).to_period("M")
+            end_period = pd.Timestamp(self.end_date).to_period("M")
+            if end_period.ordinal - start_period.ordinal + 1 < 24:
+                raise ValueError(
+                    "Confirmatory experiments require at least 24 months "
+                    "for subperiod robustness."
                 )
         return self
 
@@ -197,6 +219,45 @@ def _factor_evidence(
     return configured, blockers
 
 
+def _holdout_factor_diagnostics(
+    factors: pd.DataFrame,
+    prices: pd.DataFrame,
+    holdout_start: str,
+    holdout_end: str,
+) -> tuple[dict[str, pd.DataFrame], dict]:
+    start = pd.Timestamp(holdout_start)
+    end = pd.Timestamp(holdout_end)
+    factor_dates = pd.to_datetime(factors["date"]).dt.normalize()
+    holdout_factors = factors.loc[factor_dates.between(start, end)].copy()
+    price_dates = pd.to_datetime(prices["date"]).dt.normalize()
+    holdout_prices = prices.loc[price_dates <= end].copy()
+    diagnostics = comprehensive_factor_diagnostics(
+        holdout_factors,
+        holdout_prices,
+    )
+    scope = {
+        "evaluation_scope": "holdout",
+        "holdout_start": holdout_start,
+        "holdout_end": holdout_end,
+        "factor_date_min": (
+            str(pd.to_datetime(holdout_factors["date"]).min().date())
+            if not holdout_factors.empty
+            else None
+        ),
+        "factor_date_max": (
+            str(pd.to_datetime(holdout_factors["date"]).max().date())
+            if not holdout_factors.empty
+            else None
+        ),
+        "price_date_max": (
+            str(pd.to_datetime(holdout_prices["date"]).max().date())
+            if not holdout_prices.empty
+            else None
+        ),
+    }
+    return diagnostics, scope
+
+
 class ResearchOrchestrator:
     """Bounded research runner. It never writes raw inputs or baseline artifacts."""
 
@@ -291,6 +352,27 @@ class ResearchOrchestrator:
                 if not hasattr(config.ml.walk_forward, key):
                     raise ValueError(f"Unsupported walk-forward field: {key}")
                 setattr(config.ml.walk_forward, key, value)
+        if spec.research_stage == "confirmatory":
+            if len(set(config.robustness.cost_sensitivity_bps)) < 3:
+                raise ValueError(
+                    "Confirmatory cost sensitivity requires at least three "
+                    "distinct cost scenarios."
+                )
+            if len(set(config.robustness.top_n_values)) < 2:
+                raise ValueError(
+                    "Confirmatory holding-count sensitivity requires at least "
+                    "two distinct target counts."
+                )
+            nonzero_shifts = {
+                shift
+                for shift in config.robustness.rebalance_day_shifts
+                if shift != 0
+            }
+            if len(nonzero_shifts) < 2:
+                raise ValueError(
+                    "Confirmatory rebalance-day sensitivity requires at least "
+                    "two non-zero shifts."
+                )
         return config
 
     def _confirmatory_evidence(
@@ -303,6 +385,7 @@ class ResearchOrchestrator:
         full_result,
         context,
         trial_number: int,
+        robustness_rows: list[dict],
     ) -> tuple[dict, pd.DataFrame]:
         assert protocol.holdout_start is not None
         assert protocol.holdout_end is not None
@@ -446,12 +529,26 @@ class ResearchOrchestrator:
                     "Fama-French 5-factor plus Momentum regression is unavailable."
                 )
 
-        diagnostics_path = full_result.run_path / "factor_diagnostics.csv"
-        diagnostics = (
-            pd.read_csv(diagnostics_path)
-            if diagnostics_path.exists()
-            else pd.DataFrame()
+        holdout_diagnostics, diagnostic_scope = _holdout_factor_diagnostics(
+            factors,
+            data_cache.prices,
+            protocol.holdout_start,
+            protocol.holdout_end,
         )
+        diagnostic_artifacts = {
+            "summary": "factor_diagnostics.csv",
+            "quantiles": "factor_quantiles.csv",
+            "decay": "factor_decay.csv",
+            "correlation": "factor_correlation.csv",
+        }
+        for key, name in diagnostic_artifacts.items():
+            holdout_diagnostics[key].to_csv(holdout_root / name, index=False)
+            holdout_diagnostics[key].to_csv(context.path(name), index=False)
+        context.path("factor_diagnostics_scope.json").write_text(
+            json.dumps(diagnostic_scope, indent=2),
+            encoding="utf-8",
+        )
+        diagnostics = holdout_diagnostics["summary"]
         factor_evidence, factor_blockers = _factor_evidence(
             diagnostics,
             protocol,
@@ -459,6 +556,34 @@ class ResearchOrchestrator:
         )
         factor_evidence.to_csv(context.path("factor_evidence.csv"), index=False)
         blockers.extend(factor_blockers)
+        robustness = pd.DataFrame(robustness_rows)
+        required_robustness = {
+            "subperiod",
+            "cost_sensitivity",
+            "top_n_sensitivity",
+            "rebalance_day_shift",
+        }
+        observed_robustness = (
+            set(robustness["test"]) if not robustness.empty else set()
+        )
+        missing_robustness = sorted(required_robustness - observed_robustness)
+        invalid_robustness = (
+            robustness.loc[
+                robustness["test"].isin(required_robustness)
+                & (robustness["status"] != "valid"),
+                ["test", "setting"],
+            ].to_dict("records")
+            if not robustness.empty
+            else []
+        )
+        if missing_robustness:
+            blockers.append(
+                f"Required robustness tests are missing: {missing_robustness}."
+            )
+        if invalid_robustness:
+            blockers.append(
+                f"Required robustness tests are invalid: {invalid_robustness}."
+            )
         decision = research_evidence_decision(
             stage=protocol.stage,
             primary_metric=protocol.primary_metric,
@@ -649,6 +774,34 @@ class ResearchOrchestrator:
                 )
 
             add_robustness_result("base", "configured", full_result)
+            if "cost_sensitivity" in spec.robustness_tests:
+                cost_path = full_result.run_path / "cost_sensitivity.csv"
+                cost_frame = (
+                    pd.read_csv(cost_path)
+                    if cost_path.exists()
+                    else pd.DataFrame()
+                )
+                if cost_frame.empty:
+                    add_robustness_invalid(
+                        "cost_sensitivity",
+                        "all",
+                        ValueError("Cost sensitivity artifact is missing or empty."),
+                    )
+                else:
+                    for row in cost_frame.to_dict("records"):
+                        robustness_rows.append(
+                            {
+                                "test": "cost_sensitivity",
+                                "setting": f"{float(row['cost_bps']):g}_bps",
+                                "run_id": full_result.run_id,
+                                "status": "valid",
+                                "total_return": row.get("total_return"),
+                                "transaction_cost_paid": row.get(
+                                    "transaction_cost_paid"
+                                ),
+                                "config_diff": "{}",
+                            }
+                        )
             start = pd.Timestamp(spec.start_date)
             end = pd.Timestamp(spec.end_date)
             midpoint = start + (end - start) / 2
@@ -801,6 +954,19 @@ class ResearchOrchestrator:
                 source = full_result.run_path / artifact
                 if source.exists():
                     copyfile(source, context.path(artifact))
+            if protocol.stage == "confirmatory":
+                for artifact in [
+                    "factor_diagnostics.csv",
+                    "factor_quantiles.csv",
+                    "factor_decay.csv",
+                    "factor_correlation.csv",
+                ]:
+                    source = full_result.run_path / artifact
+                    if source.exists():
+                        copyfile(
+                            source,
+                            context.path(f"full_sample_{artifact}"),
+                        )
             ml_source = full_result.run_path / "ml_evaluation"
             if ml_source.exists():
                 for source in ml_source.iterdir():
@@ -817,6 +983,7 @@ class ResearchOrchestrator:
                     full_result=full_result,
                     context=context,
                     trial_number=trial_number,
+                    robustness_rows=robustness_rows,
                 )
             else:
                 decision = research_evidence_decision(
@@ -864,7 +1031,12 @@ class ResearchOrchestrator:
                 "## Data Gate\nPassed all configured point-in-time and coverage checks.",
                 "",
                 "## Workflow",
-                "- Single-factor diagnostics: generated in the full child run.",
+                (
+                    "- Single-factor diagnostics: confirmatory evidence uses "
+                    "holdout-only diagnostics."
+                    if protocol.stage == "confirmatory"
+                    else "- Single-factor diagnostics: generated in the full child run."
+                ),
                 "- Portfolio backtest: completed.",
                 "- Subperiod checks: completed when the sample spans at least two years.",
                 "- Cost and delisting sensitivity: generated in every child run.",

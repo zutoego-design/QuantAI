@@ -510,6 +510,16 @@ def _simulate_ledger(
         gross_start = previous_value
         missing_return_fills = 0
         daily_sector_contributions: dict[str, float] = {}
+        daily_cash_rate = (
+            (1.0 + config.backtest.cash_interest_annual_rate) ** (1.0 / 252.0)
+            - 1.0
+        )
+        cash_interest = cash * daily_cash_rate
+        cash += cash_interest
+        if cash_interest:
+            daily_sector_contributions["Cash Interest"] = (
+                cash_interest / gross_start if gross_start else 0.0
+            )
         for symbol in list(holdings):
             value = holdings[symbol]
             asset_return = returns.at[day, symbol] if symbol in returns and day in returns.index else np.nan
@@ -604,6 +614,7 @@ def _simulate_ledger(
                     {
                         "signal_date": event["signal_date"],
                         "execution_date": day,
+                        "execution_price_model": config.backtest.execution_price,
                         "symbol": symbol,
                         "trade_notional": float(trades.loc[symbol]),
                         "current_weight": float(current_weights.get(symbol, 0.0)),
@@ -629,6 +640,7 @@ def _simulate_ledger(
                 {
                     "signal_date": event["signal_date"],
                     "execution_date": day,
+                    "execution_price_model": config.backtest.execution_price,
                     "optimizer_status": event["optimizer_status"],
                     "warning": event["warning"],
                     "turnover": turnover,
@@ -694,6 +706,8 @@ def _simulate_ledger(
                 "turnover": turnover,
                 "transaction_cost": total_cost,
                 "cash": cash,
+                "cash_interest": cash_interest,
+                "execution_price_model": config.backtest.execution_price,
                 "delisting_liquidations": len(liquidated),
                 "missing_return_fills": missing_return_fills,
             }
@@ -1475,6 +1489,7 @@ def run_backtest(
             status="valid",
             quality_gates={
                 "synthetic_rows": synthetic_rows,
+                "execution_price_model": config.backtest.execution_price,
                 "benchmark_complete": not daily["benchmark_return"].isna().any(),
                 "secondary_benchmark_complete": not daily[
                     "secondary_benchmark_return"
@@ -1567,6 +1582,11 @@ def run_backtest(
                     f"- Status: `{context.manifest.status}`",
                     f"- Strategy: `{config.strategy.name}`",
                     f"- Universe: `{config.universe.name}`",
+                    f"- Execution price model: `{config.backtest.execution_price}`",
+                    (
+                        "- Cash interest annual rate: "
+                        f"`{config.backtest.cash_interest_annual_rate:.4%}`"
+                    ),
                     f"- Bias review recommendation: `{bias_review['recommendation']}`",
                     f"- Largest absolute sector contribution: `{dominant_sector}`",
                     "",

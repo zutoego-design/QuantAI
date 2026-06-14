@@ -164,7 +164,12 @@ def experiment_comparison_row(
         net_sharpe = float(portfolio["net_sharpe"])
         average_turnover = float(portfolio["average_turnover"])
         mean_rank_ic = float(aggregate["mean_rank_ic"])
-    diagnostics = pd.read_csv(child / "factor_diagnostics.csv")
+    diagnostics_path = (
+        root / "factor_diagnostics.csv"
+        if evaluation_scope == "holdout"
+        else child / "factor_diagnostics.csv"
+    )
+    diagnostics = pd.read_csv(diagnostics_path)
     text_row = diagnostics.loc[
         diagnostics["factor_name"] == "risk_disclosure_score"
     ]

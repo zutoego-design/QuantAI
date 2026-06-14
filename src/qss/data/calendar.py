@@ -1,10 +1,20 @@
 from __future__ import annotations
 
+import exchange_calendars as xcals
 import pandas as pd
 
 
 def business_days(start_date: str | pd.Timestamp, end_date: str | pd.Timestamp) -> pd.DatetimeIndex:
     return pd.bdate_range(pd.Timestamp(start_date), pd.Timestamp(end_date))
+
+
+def latest_expected_us_trading_day(
+    end_date: str | pd.Timestamp,
+) -> pd.Timestamp:
+    end = pd.Timestamp(end_date).normalize()
+    calendar = xcals.get_calendar("XNYS")
+    session = calendar.date_to_session(end, direction="previous")
+    return pd.Timestamp(session).tz_localize(None).normalize()
 
 
 def month_end_dates(start_date: str | pd.Timestamp, end_date: str | pd.Timestamp) -> list[pd.Timestamp]:

@@ -39,6 +39,7 @@ These results do not authorize live or paper-broker order routing.
 See:
 
 - [Documentation](docs/README.md)
+- [Current research status](docs/CURRENT_RESEARCH_STATUS.md)
 - [Research methodology](docs/RESEARCH_METHODOLOGY.md)
 - [Research credibility plan](docs/RESEARCH_CREDIBILITY_PLAN.md)
 - [Operations](docs/OPERATIONS.md)
@@ -50,9 +51,11 @@ See:
 Use Python `>=3.11`.
 
 ```powershell
-python -m venv .venv
-.\.venv\Scripts\python.exe -m pip install -e ".[dev]"
+uv sync --frozen --extra dev
 ```
+
+`uv.lock` is the reproducible dependency source. The legacy editable-install workflow
+remains usable for local development, but research reruns should use the frozen lock.
 
 Set a real SEC contact string before heavier SEC synchronization:
 

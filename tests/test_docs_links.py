@@ -26,6 +26,7 @@ def test_docs_root_contains_only_active_documents():
     root = Path(__file__).resolve().parents[1] / "docs"
     assert {path.name for path in root.glob("*.md")} == {
         "README.md",
+        "CURRENT_RESEARCH_STATUS.md",
         "RESEARCH_METHODOLOGY.md",
         "RESEARCH_CREDIBILITY_PLAN.md",
         "OPERATIONS.md",

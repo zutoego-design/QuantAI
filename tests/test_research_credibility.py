@@ -1,3 +1,5 @@
+from pathlib import Path
+
 import numpy as np
 import pandas as pd
 import pytest
@@ -6,7 +8,11 @@ from qss.config.loader import get_config
 from qss.experiments.registry import ExperimentRegistry
 from qss.ingestion.fama_french import _parse_daily_factors
 from qss.research.decision import research_evidence_decision
-from qss.research.orchestrator import ExperimentSpec, _config_diff
+from qss.research.orchestrator import (
+    ExperimentSpec,
+    _config_diff,
+    _holdout_factor_diagnostics,
+)
 from qss.research.portfolio_evaluation import simulate_score_portfolio
 from qss.research.protocol import ResearchProtocol, validate_label_gap
 from qss.research.snapshot import build_data_snapshot
@@ -56,9 +62,96 @@ def test_data_snapshot_is_stable_and_changes_with_input(tmp_path):
     first = build_data_snapshot(config)
     second = build_data_snapshot(config)
     assert first["snapshot_id"] == second["snapshot_id"]
+    archived = Path(first["files"][0]["archive_path"])
+    assert archived.exists()
+    assert archived.read_bytes() == b"first"
     price.write_bytes(b"second")
     changed = build_data_snapshot(config)
     assert changed["snapshot_id"] != first["snapshot_id"]
+
+
+def test_data_snapshot_includes_macro_style_factors_and_environment(tmp_path):
+    config = get_config(["configs/default.yaml"])
+    config.paths.silver_data = str(tmp_path / "silver")
+    config.research_validation.style_factor_cache = str(tmp_path / "fama_french")
+    macro = tmp_path / "silver" / "macro" / "macro_observations.parquet"
+    macro.parent.mkdir(parents=True)
+    macro.write_bytes(b"macro")
+    style = tmp_path / "fama_french" / "ff5_momentum_daily.parquet"
+    style.parent.mkdir(parents=True)
+    style.write_bytes(b"style")
+
+    snapshot = build_data_snapshot(config)
+    paths = {item["path"].replace("\\", "/") for item in snapshot["files"]}
+
+    assert any(path.endswith("macro/macro_observations.parquet") for path in paths)
+    assert any("fama_french" in path for path in paths)
+    assert snapshot["environment"]["packages"]
+
+
+def test_confirmatory_spec_requires_full_robustness_matrix():
+    with pytest.raises(ValueError, match="robustness tests"):
+        ExperimentSpec(
+            hypothesis="confirmatory",
+            study_id="study-a",
+            research_stage="confirmatory",
+            development_start="2023-01-01",
+            development_end="2023-06-30",
+            holdout_start="2023-08-01",
+            holdout_end="2024-12-31",
+            trial_family="family-a",
+            robustness_tests=[],
+            start_date="2023-01-01",
+            end_date="2024-12-31",
+        )
+
+
+def test_confirmatory_factor_diagnostics_only_receive_holdout_rows(monkeypatch):
+    captured = {}
+
+    def fake_diagnostics(factors, prices):
+        captured["factor_dates"] = pd.to_datetime(factors["date"])
+        captured["price_dates"] = pd.to_datetime(prices["date"])
+        return {
+            "summary": pd.DataFrame(),
+            "quantiles": pd.DataFrame(),
+            "decay": pd.DataFrame(),
+            "correlation": pd.DataFrame(),
+        }
+
+    monkeypatch.setattr(
+        "qss.research.orchestrator.comprehensive_factor_diagnostics",
+        fake_diagnostics,
+    )
+    factors = pd.DataFrame(
+        {
+            "date": pd.to_datetime(
+                ["2023-06-01", "2023-08-01", "2023-09-01"]
+            ),
+            "symbol": ["A", "A", "A"],
+        }
+    )
+    prices = pd.DataFrame(
+        {
+            "date": pd.to_datetime(
+                ["2023-06-01", "2023-08-01", "2023-12-29", "2024-01-02"]
+            ),
+            "symbol": ["A"] * 4,
+            "adj_close": [1.0, 1.1, 1.2, 1.3],
+        }
+    )
+
+    _, scope = _holdout_factor_diagnostics(
+        factors,
+        prices,
+        "2023-08-01",
+        "2023-12-31",
+    )
+
+    assert captured["factor_dates"].min() == pd.Timestamp("2023-08-01")
+    assert captured["factor_dates"].max() == pd.Timestamp("2023-09-01")
+    assert captured["price_dates"].max() == pd.Timestamp("2023-12-29")
+    assert scope["evaluation_scope"] == "holdout"
 
 
 def test_registry_tracks_trials_and_snapshot_identity(tmp_path):

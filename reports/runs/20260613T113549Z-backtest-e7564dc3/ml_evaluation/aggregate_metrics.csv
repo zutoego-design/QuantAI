@@ -1,0 +1,2 @@
+model_type,folds,mean_mse,mean_mae,mean_rank_ic
+elastic_net,34,0.0769993670310838,0.2393985480654329,-0.01762575153176621

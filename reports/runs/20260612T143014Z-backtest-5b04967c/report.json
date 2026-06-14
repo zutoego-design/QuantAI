@@ -1,0 +1,166 @@
+{
+  "schema_version": "1.0",
+  "run_id": "20260612T143014Z-backtest-5b04967c",
+  "status": "valid",
+  "metrics": [
+    {
+      "category": "performance",
+      "metric": "total_return",
+      "value": 1.3346120012082685
+    },
+    {
+      "category": "performance",
+      "metric": "gross_total_return",
+      "value": 1.3789049879191735
+    },
+    {
+      "category": "performance",
+      "metric": "net_total_return",
+      "value": 1.3346120012082685
+    },
+    {
+      "category": "performance",
+      "metric": "benchmark_total_return",
+      "value": 1.7499410348222195
+    },
+    {
+      "category": "performance",
+      "metric": "cagr",
+      "value": 0.28054828300973367
+    },
+    {
+      "category": "performance",
+      "metric": "annualized_volatility",
+      "value": 0.1667424097453682
+    },
+    {
+      "category": "performance",
+      "metric": "downside_volatility",
+      "value": 0.11274414150713391
+    },
+    {
+      "category": "performance",
+      "metric": "sharpe_ratio",
+      "value": 1.5671792100084077
+    },
+    {
+      "category": "performance",
+      "metric": "sortino_ratio",
+      "value": 2.317772209592899
+    },
+    {
+      "category": "performance",
+      "metric": "calmar_ratio",
+      "value": 1.3913144780475861
+    },
+    {
+      "category": "performance",
+      "metric": "omega_ratio",
+      "value": 1.3100229443454043
+    },
+    {
+      "category": "performance",
+      "metric": "max_drawdown",
+      "value": -0.20164261023390162
+    },
+    {
+      "category": "performance",
+      "metric": "var_95_daily",
+      "value": -0.01632523637367491
+    },
+    {
+      "category": "performance",
+      "metric": "cvar_95_daily",
+      "value": -0.023295718666991684
+    },
+    {
+      "category": "benchmark",
+      "metric": "alpha_annualized",
+      "value": 0.059484998634375605
+    },
+    {
+      "category": "benchmark",
+      "metric": "beta",
+      "value": 0.6406596395111204
+    },
+    {
+      "category": "benchmark",
+      "metric": "correlation",
+      "value": 0.7666314628474311
+    },
+    {
+      "category": "benchmark",
+      "metric": "r_squared",
+      "value": 0.5877237998275922
+    },
+    {
+      "category": "benchmark",
+      "metric": "tracking_error",
+      "value": 0.1288535338513824
+    },
+    {
+      "category": "benchmark",
+      "metric": "information_ratio",
+      "value": -0.41690597803410884
+    },
+    {
+      "category": "benchmark",
+      "metric": "up_capture",
+      "value": 0.6601996715579462
+    },
+    {
+      "category": "benchmark",
+      "metric": "down_capture",
+      "value": 0.6060432191585013
+    },
+    {
+      "category": "portfolio",
+      "metric": "average_turnover",
+      "value": 0.5236265167749868
+    },
+    {
+      "category": "portfolio",
+      "metric": "average_number_of_holdings",
+      "value": 50.0
+    },
+    {
+      "category": "portfolio",
+      "metric": "cost_drag",
+      "value": 0.04429298671090498
+    },
+    {
+      "category": "portfolio",
+      "metric": "max_adv_participation",
+      "value": 0.0008245306352213993
+    },
+    {
+      "category": "portfolio",
+      "metric": "average_holding_period_days",
+      "value": 534.345971563981
+    },
+    {
+      "category": "portfolio",
+      "metric": "estimated_capacity",
+      "value": 121281121.31715815
+    },
+    {
+      "category": "portfolio",
+      "metric": "average_hhi",
+      "value": 0.02130353362997636
+    },
+    {
+      "category": "portfolio",
+      "metric": "average_effective_holdings",
+      "value": 48.48353916220968
+    }
+  ],
+  "artifacts": {
+    "daily_returns": "daily_returns.parquet",
+    "rebalances": "rebalances.parquet",
+    "holdings": "holdings.parquet",
+    "trades": "trades.parquet",
+    "factor_diagnostics": "factor_diagnostics.csv",
+    "data_diagnostics": "data_diagnostics.csv",
+    "html": "report.html"
+  }
+}

@@ -2,7 +2,10 @@ import numpy as np
 import pandas as pd
 
 from qss.config.loader import get_config
-from qss.portfolio.optimizer import optimize_portfolio_with_status
+from qss.portfolio.optimizer import (
+    optimize_portfolio_to_target_count,
+    optimize_portfolio_with_status,
+)
 
 
 def _sample_scores(count: int = 25) -> pd.DataFrame:
@@ -76,3 +79,29 @@ def test_optimizer_counts_positions_outside_new_candidate_set_as_turnover():
         config=config,
     )
     assert result.status == "fallback"
+
+
+def test_operational_optimizer_enforces_exact_target_count():
+    config = get_config(["configs/default.yaml"]).optimizer
+    scores = _sample_scores(100)
+    covariance = pd.DataFrame(
+        np.eye(len(scores)) * 0.0001,
+        index=scores["symbol"],
+        columns=scores["symbol"],
+    )
+
+    result = optimize_portfolio_to_target_count(
+        scores=scores,
+        covariance=covariance,
+        previous_weights=pd.Series(dtype=float),
+        sector_map=scores.set_index("symbol")["sector"],
+        config=config,
+    )
+
+    assert result.status != "fallback"
+    assert len(result.weights) == config.constraints.target_num_holdings
+    assert result.weights["target_weight"].min() > 0
+    assert (
+        result.weights.groupby("sector")["target_weight"].sum().max()
+        <= config.constraints.max_sector_weight + 1e-6
+    )

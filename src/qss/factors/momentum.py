@@ -26,8 +26,26 @@ def compute_momentum_factors(
         prices.loc[(prices["date"] <= as_of_date) & (prices["symbol"].isin(symbols))]
         .sort_values(["symbol", "date"])
         .pivot(index="date", columns="symbol", values="adj_close")
+        .reindex(columns=symbols)
     )
     data = {"symbol": symbols}
+    values = price_pivot.to_numpy(dtype="float64", na_value=np.nan)
     for window, name, skip in [(252, "momentum_12_1", 21), (126, "momentum_6m", 0), (63, "momentum_3m", 0)]:
-        data[name] = [ _trailing_return(price_pivot[symbol], window, skip_recent=skip) for symbol in symbols ]
+        results = []
+        for column in range(values.shape[1]):
+            clean = values[:, column]
+            clean = clean[np.isfinite(clean)]
+            if len(clean) <= window + skip:
+                results.append(np.nan)
+                continue
+            end_index = -1 - skip if skip else -1
+            start_index = end_index - window
+            start_value = clean[start_index]
+            end_value = clean[end_index]
+            results.append(
+                np.nan
+                if start_value == 0
+                else float(end_value / start_value - 1)
+            )
+        data[name] = results
     return pd.DataFrame(data)

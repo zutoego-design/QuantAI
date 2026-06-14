@@ -5,6 +5,7 @@ import pytest
 
 from qss.backtest.metrics import comprehensive_factor_diagnostics
 from qss.config.loader import get_config
+from qss.data.validation import failed_check_summary
 from qss.research.orchestrator import ExperimentSpec
 from qss.runs.manifest import create_run_context
 
@@ -80,3 +81,66 @@ def test_factor_diagnostics_include_ic_quantiles_decay_and_correlation():
     assert not reports["quantiles"].empty
     assert set(reports["decay"]["horizon_days"]) >= {1, 5, 21}
     assert not reports["correlation"].empty
+
+
+def test_failed_check_summary_is_actionable_and_bounded():
+    checks = pd.DataFrame(
+        [
+            {"check": "prices_nonempty", "passed": False, "value": 0},
+            {"check": "macro_nonempty", "passed": True, "value": 20},
+            {"check": "membership_nonempty", "passed": False, "value": 0},
+        ]
+    )
+    assert failed_check_summary(checks, limit=1) == "prices_nonempty=0; +1 more"
+
+
+def test_two_calendar_years_include_subperiod_robustness(monkeypatch, tmp_path):
+    config = get_config(["configs/default.yaml"])
+    config.paths.reports = str(tmp_path / "reports")
+    config.registry.enabled = False
+    spec = ExperimentSpec(
+        hypothesis="calendar boundary",
+        robustness_tests=["subperiod"],
+        start_date="2024-01-01",
+        end_date="2025-12-31",
+    )
+
+    class Result:
+        def __init__(self, run_id):
+            self.run_id = run_id
+            self.run_path = tmp_path / run_id
+            self.run_path.mkdir()
+            self.metrics = pd.DataFrame(
+                [
+                    {"metric": "cagr", "value": 0.1},
+                    {"metric": "sharpe_ratio", "value": 1.0},
+                    {"metric": "max_drawdown", "value": -0.1},
+                ]
+            )
+
+    monkeypatch.setattr(
+        "qss.research.orchestrator.validate_research_data",
+        lambda *args, **kwargs: type("Validation", (), {"status": "valid"})(),
+    )
+    monkeypatch.setattr(
+        "qss.research.orchestrator.load_backtest_data",
+        lambda *args, **kwargs: object(),
+    )
+    calls = []
+
+    def fake_run_backtest(start_date, end_date, *args, **kwargs):
+        calls.append((start_date, end_date, kwargs.get("artifact_level", "full")))
+        return Result(f"run-{len(calls)}")
+
+    monkeypatch.setattr(
+        "qss.research.orchestrator.run_backtest",
+        fake_run_backtest,
+    )
+
+    context = __import__(
+        "qss.research.orchestrator",
+        fromlist=["ResearchOrchestrator"],
+    ).ResearchOrchestrator(config).run(spec)
+
+    assert context.manifest.status == "valid"
+    assert [call[2] for call in calls] == ["full", "metrics", "metrics"]

@@ -1,0 +1,405 @@
+{
+  "includes": [],
+  "project": {
+    "name": "quant_stock_system",
+    "version": "0.2.0",
+    "timezone": "America/New_York",
+    "base_currency": "USD"
+  },
+  "paths": {
+    "raw_data": "data/raw",
+    "silver_data": "data/silver",
+    "gold_data": "data/gold",
+    "reports": "reports"
+  },
+  "runtime": {
+    "log_level": "INFO",
+    "overwrite_existing": false,
+    "cache_enabled": true,
+    "research_mode": true,
+    "allow_synthetic": false
+  },
+  "data_sources": {
+    "prices": {
+      "provider": "yfinance",
+      "adjusted_prices": true,
+      "fallback_provider": "stooq",
+      "batch_size": 25,
+      "allow_synthetic_fallback": false
+    },
+    "fundamentals": {
+      "provider": "sec_edgar",
+      "use_xbrl": true,
+      "filing_types": [
+        "10-K",
+        "10-Q"
+      ],
+      "user_agent": "QuantAI Research bot contact@example.com",
+      "fallback_to_synthetic": false,
+      "cache_days": 7,
+      "max_workers": 4
+    },
+    "macro": {
+      "provider": "fred",
+      "api_key_env_var": "FRED_API_KEY"
+    },
+    "etf": {
+      "provider": "yfinance",
+      "tickers": {
+        "equity": {
+          "spy": "SPY",
+          "qqq": "QQQ",
+          "iwm": "IWM"
+        },
+        "rates": {
+          "short_treasury": "SHY",
+          "intermediate_treasury": "IEF",
+          "long_treasury": "TLT"
+        },
+        "credit": {
+          "investment_grade": "LQD",
+          "high_yield": "HYG"
+        }
+      }
+    }
+  },
+  "universe": {
+    "name": "sp500_historical_standard",
+    "market": "US",
+    "base_index_proxy": "^GSPC",
+    "seed_metadata_path": "configs/seed_universe.csv",
+    "filters": {
+      "min_market_cap": 2000000000.0,
+      "min_price": 5.0,
+      "min_adv_20d": 5000000.0,
+      "min_history_days": 252,
+      "min_price_data_completeness": 0.9,
+      "max_price_staleness_days": 7
+    },
+    "exclude": {
+      "sectors": [],
+      "security_types": [
+        "Preferred",
+        "ETF",
+        "ETN",
+        "Fund",
+        "Closed-End Fund",
+        "Warrant",
+        "Unit",
+        "Test"
+      ]
+    },
+    "rebalance_frequency": "monthly",
+    "exchange": "US",
+    "start_date": "2016-01-01",
+    "membership_mode": "point_in_time",
+    "allowed_security_types": [
+      "Common Stock"
+    ],
+    "long_history_provider": "sp500_wikipedia",
+    "validation_provider": "disabled",
+    "recent_validation_years": 2,
+    "min_recent_jaccard": 0.95,
+    "min_recent_price_coverage": 0.98,
+    "min_long_price_coverage": 0.8,
+    "min_sector_coverage": 0.85,
+    "max_remote_requests_per_sync": 25,
+    "remote_request_interval_seconds": 12.0
+  },
+  "strategy": {
+    "name": "multifactor_balanced_us_v1_drawdown_fixed",
+    "rebalance_frequency": "monthly",
+    "risk_monitor_frequency": "daily",
+    "benchmark": "SPY",
+    "min_factor_coverage": 0.8
+  },
+  "factor_processing": {
+    "winsorize": {
+      "enabled": true,
+      "lower_quantile": 0.01,
+      "upper_quantile": 0.99
+    },
+    "standardization": {
+      "method": "zscore",
+      "by_date": true
+    },
+    "neutralization": {
+      "sector": true,
+      "market_cap": true,
+      "method": "cross_sectional_regression"
+    }
+  },
+  "factor_groups": {
+    "value": {
+      "weight": 0.3,
+      "factors": {
+        "earnings_yield": {
+          "weight": 0.25,
+          "direction": 1
+        },
+        "free_cash_flow_yield": {
+          "weight": 0.25,
+          "direction": 1
+        },
+        "book_to_market": {
+          "weight": 0.25,
+          "direction": 1
+        },
+        "sales_yield": {
+          "weight": 0.25,
+          "direction": 1
+        }
+      }
+    },
+    "quality": {
+      "weight": 0.3,
+      "factors": {
+        "roe": {
+          "weight": 0.625,
+          "direction": 1
+        },
+        "accruals": {
+          "weight": 0.375,
+          "direction": -1
+        }
+      }
+    },
+    "momentum": {
+      "weight": 0.25,
+      "factors": {
+        "momentum_12_1": {
+          "weight": 0.5,
+          "direction": 1
+        },
+        "momentum_6m": {
+          "weight": 0.3,
+          "direction": 1
+        },
+        "momentum_3m": {
+          "weight": 0.2,
+          "direction": 1
+        }
+      }
+    },
+    "low_volatility": {
+      "weight": 0.15,
+      "factors": {
+        "realized_vol_60d": {
+          "weight": 0.35,
+          "direction": -1
+        },
+        "realized_vol_252d": {
+          "weight": 0.35,
+          "direction": -1
+        },
+        "beta_to_spy": {
+          "weight": 0.2,
+          "direction": -1
+        },
+        "max_drawdown_252d": {
+          "weight": 0.1,
+          "direction": 1
+        }
+      }
+    }
+  },
+  "optimizer": {
+    "enabled": true,
+    "method": "cvxpy_score_risk_turnover",
+    "candidate_count": 100,
+    "objective": {
+      "maximize_alpha": true,
+      "risk_aversion": 5.0,
+      "turnover_penalty": 1.0
+    },
+    "constraints": {
+      "long_only": true,
+      "fully_invested": true,
+      "min_weight": 0.0,
+      "max_weight": 0.05,
+      "target_num_holdings": 50,
+      "max_sector_weight": 0.25,
+      "max_turnover_per_rebalance": 0.3,
+      "tracking_error_limit": null
+    },
+    "covariance": {
+      "method": "historical_shrinkage",
+      "lookback_days": 252,
+      "shrinkage_intensity": 0.2
+    },
+    "fallback": {
+      "method": "top_n_equal_weight",
+      "top_n": 50
+    }
+  },
+  "risk_limits": {
+    "benchmark": "SPY",
+    "portfolio": {
+      "max_single_name_weight": 0.05,
+      "max_sector_weight": 0.25,
+      "max_daily_loss": 0.03,
+      "max_drawdown_alert": 0.15,
+      "max_realized_vol_annualized": 0.25,
+      "max_beta_to_benchmark": 1.2,
+      "min_beta_to_benchmark": 0.6,
+      "max_tracking_error": 0.08,
+      "max_turnover_monthly": 0.3
+    },
+    "alerts": {
+      "write_csv": true,
+      "write_html": true,
+      "send_email": false
+    }
+  },
+  "macro": {
+    "fred_series": {
+      "cpi": "CPIAUCSL",
+      "unemployment": "UNRATE",
+      "fed_funds": "FEDFUNDS",
+      "ten_year_treasury": "DGS10",
+      "two_year_treasury": "DGS2",
+      "baa_spread": "BAA10Y"
+    },
+    "etf_proxies": {
+      "equity_market": "SPY",
+      "long_rates": "TLT",
+      "intermediate_rates": "IEF",
+      "investment_grade_credit": "LQD",
+      "high_yield_credit": "HYG"
+    },
+    "regime_rules": {
+      "inflation": {
+        "lookback_months": 6,
+        "high_threshold_yoy": 0.03
+      },
+      "rates": {
+        "curve_inversion_threshold": 0.0
+      },
+      "credit": {
+        "spread_widening_zscore": 1.0
+      }
+    },
+    "usage": {
+      "affect_portfolio_weights": false,
+      "display_in_dashboard": true,
+      "include_in_risk_report": true
+    }
+  },
+  "backtest": {
+    "start_date": "2016-01-01",
+    "end_date": null,
+    "initial_capital": 1000000.0,
+    "rebalance_frequency": "monthly",
+    "rebalance_execution_lag_days": 1,
+    "transaction_cost": {
+      "commission_bps": 1.0,
+      "slippage_bps": 5.0,
+      "market_impact_coefficient": 0.1,
+      "max_adv_participation": 0.1
+    },
+    "delisting_return_scenarios": [
+      0.0,
+      -0.3,
+      -1.0
+    ],
+    "primary_benchmark": "^GSPC",
+    "secondary_benchmark": "SPY"
+  },
+  "labels": {
+    "enabled": true,
+    "label_types": [
+      "forward_return",
+      "cross_sectional_rank"
+    ],
+    "horizon_days": 21,
+    "start_offset_days": 0,
+    "embargo_days": 5,
+    "version": "v1"
+  },
+  "ml": {
+    "enabled": false,
+    "model_type": "ridge",
+    "target": "cross_sectional_rank",
+    "parameters": {},
+    "portfolio_top_n": 50,
+    "transaction_cost_bps": 10.0,
+    "walk_forward": {
+      "train_periods": 24,
+      "test_periods": 3,
+      "step_periods": 3,
+      "min_train_periods": 12,
+      "rolling": false,
+      "purge": true,
+      "embargo_days": 5
+    }
+  },
+  "robustness": {
+    "enabled": true,
+    "cost_sensitivity_bps": [
+      5.0,
+      10.0,
+      25.0,
+      50.0
+    ],
+    "top_n_values": [
+      30,
+      50,
+      100
+    ],
+    "rebalance_day_shifts": [
+      -5,
+      0,
+      5
+    ],
+    "parallel_workers": 2
+  },
+  "research_validation": {
+    "bootstrap_block_days": 21,
+    "bootstrap_samples": 2000,
+    "bootstrap_seed": 42,
+    "confidence_level": 0.95,
+    "deflated_sharpe_probability": 0.95,
+    "fdr_alpha": 0.05,
+    "style_factor_cache": "data/raw/fama_french",
+    "require_style_regression": true
+  },
+  "registry": {
+    "enabled": true,
+    "path": "experiments/registry.duckdb"
+  },
+  "approval": {
+    "enabled": true,
+    "directory": "reports/approvals",
+    "require_human_approval": true
+  },
+  "text_factors": {
+    "enabled": false,
+    "cache_directory": "data/raw/sec_text",
+    "lookback_days": 365,
+    "filing_types": [
+      "10-K",
+      "10-K/A",
+      "10-Q",
+      "10-Q/A",
+      "8-K"
+    ],
+    "risk_terms": [
+      "material weakness",
+      "going concern",
+      "litigation",
+      "cybersecurity",
+      "restatement",
+      "default"
+    ]
+  },
+  "operations": {
+    "scheduler": "documented_job_runner",
+    "owner": "research-operations"
+  },
+  "quickstart": {
+    "universe_source": "sp500",
+    "target_symbols": 500,
+    "max_symbols": 1000,
+    "prefer_seed_symbols": true
+  }
+}

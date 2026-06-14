@@ -1,0 +1,359 @@
+[
+  {
+    "name": "accruals",
+    "category": "quality",
+    "description": "Accounting earnings less operating cash flow, scaled by assets.",
+    "inputs": [
+      "net_income",
+      "operating_cash_flow",
+      "total_assets"
+    ],
+    "lookback_days": null,
+    "skip_days": 0,
+    "expected_horizon": "60d+",
+    "cost_sensitivity": "low",
+    "point_in_time_requirements": [
+      "filing_date",
+      "available_date"
+    ],
+    "leakage_checks": [
+      "look_ahead",
+      "timestamp_alignment",
+      "survivorship"
+    ],
+    "version": "v1"
+  },
+  {
+    "name": "beta_to_spy",
+    "category": "risk",
+    "description": "Trailing market beta to the configured benchmark.",
+    "inputs": [
+      "return_1d",
+      "benchmark_return"
+    ],
+    "lookback_days": 252,
+    "skip_days": 0,
+    "expected_horizon": "60d+",
+    "cost_sensitivity": "low",
+    "point_in_time_requirements": [
+      "as_of_date"
+    ],
+    "leakage_checks": [
+      "look_ahead",
+      "timestamp_alignment",
+      "survivorship"
+    ],
+    "version": "v1"
+  },
+  {
+    "name": "book_to_market",
+    "category": "value",
+    "description": "Shareholders equity divided by market capitalization.",
+    "inputs": [
+      "shareholders_equity",
+      "market_cap"
+    ],
+    "lookback_days": null,
+    "skip_days": 0,
+    "expected_horizon": "60d+",
+    "cost_sensitivity": "low",
+    "point_in_time_requirements": [
+      "filing_date",
+      "available_date"
+    ],
+    "leakage_checks": [
+      "look_ahead",
+      "timestamp_alignment",
+      "survivorship"
+    ],
+    "version": "v1"
+  },
+  {
+    "name": "debt_to_equity",
+    "category": "quality",
+    "description": "Total liabilities divided by shareholders equity.",
+    "inputs": [
+      "total_liabilities",
+      "shareholders_equity"
+    ],
+    "lookback_days": null,
+    "skip_days": 0,
+    "expected_horizon": "60d+",
+    "cost_sensitivity": "low",
+    "point_in_time_requirements": [
+      "filing_date",
+      "available_date"
+    ],
+    "leakage_checks": [
+      "look_ahead",
+      "timestamp_alignment",
+      "survivorship"
+    ],
+    "version": "v1"
+  },
+  {
+    "name": "earnings_yield",
+    "category": "value",
+    "description": "Net income divided by market capitalization.",
+    "inputs": [
+      "net_income",
+      "market_cap"
+    ],
+    "lookback_days": null,
+    "skip_days": 0,
+    "expected_horizon": "60d+",
+    "cost_sensitivity": "low",
+    "point_in_time_requirements": [
+      "filing_date",
+      "available_date"
+    ],
+    "leakage_checks": [
+      "look_ahead",
+      "timestamp_alignment",
+      "survivorship"
+    ],
+    "version": "v1"
+  },
+  {
+    "name": "free_cash_flow_yield",
+    "category": "value",
+    "description": "Free cash flow divided by market capitalization.",
+    "inputs": [
+      "operating_cash_flow",
+      "capital_expenditure",
+      "market_cap"
+    ],
+    "lookback_days": null,
+    "skip_days": 0,
+    "expected_horizon": "60d+",
+    "cost_sensitivity": "low",
+    "point_in_time_requirements": [
+      "filing_date",
+      "available_date"
+    ],
+    "leakage_checks": [
+      "look_ahead",
+      "timestamp_alignment",
+      "survivorship"
+    ],
+    "version": "v1"
+  },
+  {
+    "name": "gross_margin",
+    "category": "quality",
+    "description": "Gross profit divided by revenue.",
+    "inputs": [
+      "gross_profit",
+      "revenue"
+    ],
+    "lookback_days": null,
+    "skip_days": 0,
+    "expected_horizon": "60d+",
+    "cost_sensitivity": "low",
+    "point_in_time_requirements": [
+      "filing_date",
+      "available_date"
+    ],
+    "leakage_checks": [
+      "look_ahead",
+      "timestamp_alignment",
+      "survivorship"
+    ],
+    "version": "v1"
+  },
+  {
+    "name": "max_drawdown_252d",
+    "category": "risk",
+    "description": "Worst trailing drawdown over 252 trading days.",
+    "inputs": [
+      "adj_close"
+    ],
+    "lookback_days": 252,
+    "skip_days": 0,
+    "expected_horizon": "60d+",
+    "cost_sensitivity": "low",
+    "point_in_time_requirements": [
+      "as_of_date"
+    ],
+    "leakage_checks": [
+      "look_ahead",
+      "timestamp_alignment",
+      "survivorship"
+    ],
+    "version": "v1"
+  },
+  {
+    "name": "momentum_12_1",
+    "category": "momentum",
+    "description": "Twelve-month price momentum excluding the latest month.",
+    "inputs": [
+      "adj_close"
+    ],
+    "lookback_days": 252,
+    "skip_days": 21,
+    "expected_horizon": "20-60d",
+    "cost_sensitivity": "medium",
+    "point_in_time_requirements": [
+      "as_of_date"
+    ],
+    "leakage_checks": [
+      "look_ahead",
+      "timestamp_alignment",
+      "survivorship"
+    ],
+    "version": "v1"
+  },
+  {
+    "name": "momentum_3m",
+    "category": "momentum",
+    "description": "Three-month trailing price return.",
+    "inputs": [
+      "adj_close"
+    ],
+    "lookback_days": 63,
+    "skip_days": 0,
+    "expected_horizon": "20-60d",
+    "cost_sensitivity": "high",
+    "point_in_time_requirements": [
+      "as_of_date"
+    ],
+    "leakage_checks": [
+      "look_ahead",
+      "timestamp_alignment",
+      "survivorship"
+    ],
+    "version": "v1"
+  },
+  {
+    "name": "momentum_6m",
+    "category": "momentum",
+    "description": "Six-month trailing price return.",
+    "inputs": [
+      "adj_close"
+    ],
+    "lookback_days": 126,
+    "skip_days": 0,
+    "expected_horizon": "20-60d",
+    "cost_sensitivity": "medium",
+    "point_in_time_requirements": [
+      "as_of_date"
+    ],
+    "leakage_checks": [
+      "look_ahead",
+      "timestamp_alignment",
+      "survivorship"
+    ],
+    "version": "v1"
+  },
+  {
+    "name": "operating_margin",
+    "category": "quality",
+    "description": "Operating income divided by revenue.",
+    "inputs": [
+      "operating_income",
+      "revenue"
+    ],
+    "lookback_days": null,
+    "skip_days": 0,
+    "expected_horizon": "60d+",
+    "cost_sensitivity": "low",
+    "point_in_time_requirements": [
+      "filing_date",
+      "available_date"
+    ],
+    "leakage_checks": [
+      "look_ahead",
+      "timestamp_alignment",
+      "survivorship"
+    ],
+    "version": "v1"
+  },
+  {
+    "name": "realized_vol_252d",
+    "category": "risk",
+    "description": "Annualized realized volatility over 252 trading days.",
+    "inputs": [
+      "return_1d"
+    ],
+    "lookback_days": 252,
+    "skip_days": 0,
+    "expected_horizon": "60d+",
+    "cost_sensitivity": "low",
+    "point_in_time_requirements": [
+      "as_of_date"
+    ],
+    "leakage_checks": [
+      "look_ahead",
+      "timestamp_alignment",
+      "survivorship"
+    ],
+    "version": "v1"
+  },
+  {
+    "name": "realized_vol_60d",
+    "category": "risk",
+    "description": "Annualized realized volatility over 60 trading days.",
+    "inputs": [
+      "return_1d"
+    ],
+    "lookback_days": 60,
+    "skip_days": 0,
+    "expected_horizon": "20-60d",
+    "cost_sensitivity": "medium",
+    "point_in_time_requirements": [
+      "as_of_date"
+    ],
+    "leakage_checks": [
+      "look_ahead",
+      "timestamp_alignment",
+      "survivorship"
+    ],
+    "version": "v1"
+  },
+  {
+    "name": "roe",
+    "category": "quality",
+    "description": "Net income divided by shareholders equity.",
+    "inputs": [
+      "net_income",
+      "shareholders_equity"
+    ],
+    "lookback_days": null,
+    "skip_days": 0,
+    "expected_horizon": "60d+",
+    "cost_sensitivity": "low",
+    "point_in_time_requirements": [
+      "filing_date",
+      "available_date"
+    ],
+    "leakage_checks": [
+      "look_ahead",
+      "timestamp_alignment",
+      "survivorship"
+    ],
+    "version": "v1"
+  },
+  {
+    "name": "sales_yield",
+    "category": "value",
+    "description": "Revenue divided by market capitalization.",
+    "inputs": [
+      "revenue",
+      "market_cap"
+    ],
+    "lookback_days": null,
+    "skip_days": 0,
+    "expected_horizon": "60d+",
+    "cost_sensitivity": "low",
+    "point_in_time_requirements": [
+      "filing_date",
+      "available_date"
+    ],
+    "leakage_checks": [
+      "look_ahead",
+      "timestamp_alignment",
+      "survivorship"
+    ],
+    "version": "v1"
+  }
+]

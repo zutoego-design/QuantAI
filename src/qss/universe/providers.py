@@ -3,6 +3,7 @@ from __future__ import annotations
 import hashlib
 import io
 import os
+import time
 from dataclasses import dataclass
 from pathlib import Path
 from urllib.parse import urlencode
@@ -19,7 +20,11 @@ OPERATING_TYPES = {"Common Stock", "ADR", "REIT"}
 
 
 def permanent_security_id(exchange: str, name: str, first_symbol: str) -> str:
-    identity = name.strip().upper() or normalize_symbol(first_symbol)
+    normalized_name = "" if pd.isna(name) else str(name).strip().upper()
+    normalized_symbol = (
+        "" if pd.isna(first_symbol) else normalize_symbol(str(first_symbol))
+    )
+    identity = normalized_name or normalized_symbol
     canonical = f"{exchange.upper()}|{identity}"
     return "sec_" + hashlib.sha1(canonical.encode("utf-8")).hexdigest()[:20]
 
@@ -92,9 +97,15 @@ class ParquetUniverseProvider(UniverseProvider):
 class AlphaVantageListingProvider:
     endpoint = "https://www.alphavantage.co/query"
 
-    def __init__(self, api_key: str | None = None, timeout: int = 60):
+    def __init__(
+        self,
+        api_key: str | None = None,
+        timeout: int = 60,
+        retry_delays: tuple[float, ...] = (5.0, 15.0),
+    ):
         self.api_key = api_key or os.getenv("ALPHAVANTAGE_API_KEY")
         self.timeout = timeout
+        self.retry_delays = retry_delays
 
     def fetch(self, as_of_date: str | pd.Timestamp) -> pd.DataFrame:
         if not self.api_key:
@@ -105,12 +116,59 @@ class AlphaVantageListingProvider:
             "state": "active",
             "apikey": self.api_key,
         }
-        response = requests.get(self.endpoint, params=params, timeout=self.timeout)
-        response.raise_for_status()
-        if response.text.lstrip().startswith("{"):
-            raise RuntimeError(f"Alpha Vantage returned an API error: {response.text[:300]}")
-        frame = pd.read_csv(io.StringIO(response.text))
-        return normalize_alpha_vantage(frame, pd.Timestamp(as_of_date))
+        attempts = len(self.retry_delays) + 1
+        for attempt in range(attempts):
+            try:
+                response = requests.get(
+                    self.endpoint,
+                    params=params,
+                    timeout=self.timeout,
+                )
+                response.raise_for_status()
+            except requests.RequestException as exc:
+                detail = (
+                    "Alpha Vantage network request failed "
+                    f"({type(exc).__name__}); credentials were redacted."
+                )
+                if attempt >= len(self.retry_delays):
+                    raise RuntimeError(detail) from None
+                time.sleep(self.retry_delays[attempt])
+                continue
+            text = response.text.strip()
+            if text.startswith("{"):
+                try:
+                    payload = response.json()
+                except requests.JSONDecodeError:
+                    payload = {"response": text[:300]}
+                if payload:
+                    detail = next(
+                        (
+                            str(payload[key])
+                            for key in ("Error Message", "Information", "Note")
+                            if payload.get(key)
+                        ),
+                        str(payload)[:300],
+                    )
+                    raise RuntimeError(f"Alpha Vantage API unavailable: {detail}")
+                detail = (
+                    "Alpha Vantage returned an empty JSON response, usually caused "
+                    "by temporary throttling."
+                )
+            elif not text:
+                detail = "Alpha Vantage returned an empty response."
+            else:
+                frame = pd.read_csv(io.StringIO(text))
+                required = {"symbol", "name", "exchange", "assetType"}
+                if required.issubset(frame.columns) and not frame.empty:
+                    return normalize_alpha_vantage(frame, pd.Timestamp(as_of_date))
+                detail = (
+                    "Alpha Vantage returned malformed listing data; "
+                    f"columns={sorted(frame.columns)}."
+                )
+            if attempt >= len(self.retry_delays):
+                raise RuntimeError(detail)
+            time.sleep(self.retry_delays[attempt])
+        raise RuntimeError("Alpha Vantage retry loop ended unexpectedly.")
 
 
 def normalize_alpha_vantage(frame: pd.DataFrame, as_of_date: pd.Timestamp) -> pd.DataFrame:
@@ -163,7 +221,13 @@ class NasdaqTraderProvider:
         response = requests.get(self.endpoint, timeout=60)
         response.raise_for_status()
         frame = pd.read_csv(io.StringIO(response.text), sep="|")
-        frame = frame.loc[frame["Symbol"].notna() & ~frame["Symbol"].eq("File Creation Time")]
+        symbols = frame["Symbol"].astype("string").str.strip()
+        frame = frame.loc[
+            symbols.notna()
+            & symbols.ne("")
+            & ~symbols.str.startswith("File Creation Time", na=False)
+        ].copy()
+        frame["Security Name"] = frame["Security Name"].fillna(frame["Symbol"])
         result = pd.DataFrame(
             {
                 "symbol": frame["Symbol"].astype(str).map(normalize_symbol),
@@ -185,7 +249,7 @@ class NasdaqTraderProvider:
             permanent_security_id("XNAS", name, symbol)
             for name, symbol in zip(result["name"], result["symbol"], strict=False)
         ]
-        result["date"] = pd.Timestamp.utcnow().tz_localize(None).normalize()
+        result["date"] = pd.Timestamp.now(tz="UTC").tz_localize(None).normalize()
         return result
 
 
@@ -209,8 +273,14 @@ class MassiveTickerProvider:
         rows: list[dict] = []
         url = f"{self.endpoint}?{urlencode(params)}"
         while url:
-            response = requests.get(url, timeout=60)
-            response.raise_for_status()
+            try:
+                response = requests.get(url, timeout=60)
+                response.raise_for_status()
+            except requests.RequestException as exc:
+                raise RuntimeError(
+                    "Massive reference request failed "
+                    f"({type(exc).__name__}); credentials were redacted."
+                ) from None
             payload = response.json()
             rows.extend(payload.get("results", []))
             next_url = payload.get("next_url")
@@ -238,6 +308,51 @@ class MassiveTickerProvider:
             for name, symbol in zip(result["name"], result["symbol"], strict=False)
         ]
         return result
+
+    def fetch_details(
+        self,
+        symbol: str,
+        as_of_date: str | pd.Timestamp,
+    ) -> dict[str, object]:
+        if not self.api_key:
+            raise RuntimeError(
+                "MASSIVE_API_KEY or POLYGON_API_KEY is required for ticker details."
+            )
+        normalized = normalize_symbol(symbol)
+        provider_symbol = normalized.replace(".", "-")
+        response = requests.get(
+            f"{self.endpoint}/{provider_symbol}",
+            params={
+                "date": str(pd.Timestamp(as_of_date).date()),
+                "apiKey": self.api_key,
+            },
+            timeout=60,
+        )
+        if response.status_code == 404:
+            return {}
+        if response.status_code == 429:
+            raise RuntimeError("Massive ticker-details quota was exceeded.")
+        try:
+            response.raise_for_status()
+        except requests.RequestException as exc:
+            raise RuntimeError(
+                "Massive ticker-details request failed "
+                f"({type(exc).__name__}); credentials were redacted."
+            ) from None
+        details = response.json().get("results") or {}
+        if not details:
+            return {}
+        return {
+            "symbol": normalized,
+            "as_of_date": pd.Timestamp(as_of_date).normalize(),
+            "cik": details.get("cik"),
+            "sic": details.get("sic_code"),
+            "sic_description": details.get("sic_description"),
+            "name": details.get("name"),
+            "active": details.get("active"),
+            "metadata_source": "massive_ticker_details",
+            "metadata_ingestion_time": pd.Timestamp.now(tz="UTC").tz_localize(None),
+        }
 
 
 def default_universe_provider(config: AppConfig) -> ParquetUniverseProvider:

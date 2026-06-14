@@ -28,7 +28,7 @@ def config_hash(config: AppConfig) -> str:
     return hashlib.sha256(payload.encode("utf-8")).hexdigest()
 
 
-def _code_version() -> str:
+def code_version() -> str:
     try:
         result = subprocess.run(
             ["git", "rev-parse", "HEAD"],
@@ -60,6 +60,11 @@ class RunManifest:
     quality_gates: dict[str, Any] = field(default_factory=dict)
     bias_flags: list[str] = field(default_factory=list)
     notes: list[str] = field(default_factory=list)
+    research_protocol: dict[str, Any] | None = None
+    spec_hash: str | None = None
+    data_snapshot_id: str | None = None
+    trial_number: int | None = None
+    evidence_status: str | None = None
 
 
 @dataclass
@@ -79,6 +84,11 @@ class RunContext:
         quality_gates: dict[str, Any] | None = None,
         bias_flags: list[str] | None = None,
         notes: list[str] | None = None,
+        research_protocol: dict[str, Any] | None = None,
+        spec_hash: str | None = None,
+        data_snapshot_id: str | None = None,
+        trial_number: int | None = None,
+        evidence_status: str | None = None,
     ) -> None:
         if status is not None:
             self.manifest.status = status
@@ -88,6 +98,16 @@ class RunContext:
             self.manifest.bias_flags = sorted(set([*self.manifest.bias_flags, *bias_flags]))
         if notes:
             self.manifest.notes.extend(notes)
+        if research_protocol is not None:
+            self.manifest.research_protocol = research_protocol
+        if spec_hash is not None:
+            self.manifest.spec_hash = spec_hash
+        if data_snapshot_id is not None:
+            self.manifest.data_snapshot_id = data_snapshot_id
+        if trial_number is not None:
+            self.manifest.trial_number = trial_number
+        if evidence_status is not None:
+            self.manifest.evidence_status = evidence_status
         self.write_manifest()
 
     def write_manifest(self) -> Path:
@@ -118,7 +138,7 @@ def create_run_context(
         data_cutoff=str(pd.Timestamp(data_cutoff).date()) if data_cutoff is not None else None,
         config_hash=config_hash(config),
         config=config.model_dump(mode="json"),
-        code_version=_code_version(),
+        code_version=code_version(),
         python_version=platform.python_version(),
         data_sources=config.data_sources.model_dump(mode="json"),
     )

@@ -1,0 +1,2 @@
+test,setting,run_id,cagr,sharpe_ratio,max_drawdown,status,config_diff
+base,configured,20260614T011053Z-backtest-01d3a9b7,0.21246308593576324,1.4280482496032705,-0.17728047387482815,valid,{}

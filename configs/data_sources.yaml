@@ -13,6 +13,8 @@ data_sources:
       - "10-Q"
     user_agent: "QuantAI Research bot contact@example.com"
     fallback_to_synthetic: false
+    cache_days: 7
+    max_workers: 4
   macro:
     provider: "fred"
     api_key_env_var: "FRED_API_KEY"

@@ -1,0 +1,34 @@
+hypothesis: "Cached SEC risk-disclosure text adds stable information beyond tabular factors."
+universe: "sp500_historical_standard"
+factors:
+  - accruals
+  - beta_to_spy
+  - book_to_market
+  - earnings_yield
+  - free_cash_flow_yield
+  - max_drawdown_252d
+  - momentum_12_1
+  - momentum_3m
+  - momentum_6m
+  - realized_vol_252d
+  - realized_vol_60d
+  - risk_disclosure_score
+  - roe
+  - sales_yield
+portfolio:
+  target_num_holdings: 50
+  max_weight: 0.05
+  max_sector_weight: 0.25
+  max_turnover_per_rebalance: 0.30
+costs:
+  commission_bps: 1.0
+  slippage_bps: 5.0
+  market_impact_coefficient: 0.10
+  max_adv_participation: 0.10
+model:
+  enabled: false
+robustness_tests: []
+start_date: "2016-01-01"
+end_date: "2026-06-11"
+seed: 42
+max_years: 20

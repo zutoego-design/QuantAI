@@ -2,7 +2,7 @@ strategy:
   name: "multifactor_balanced_us"
   rebalance_frequency: "monthly"
   risk_monitor_frequency: "daily"
-  benchmark: "^IXIC"
+  benchmark: "SPY"
   min_factor_coverage: 0.80
 
 factor_processing:
@@ -38,19 +38,10 @@ factor_groups:
     weight: 0.30
     factors:
       roe:
-        weight: 0.25
+        weight: 0.625
         direction: 1
-      gross_margin:
-        weight: 0.20
-        direction: 1
-      operating_margin:
-        weight: 0.20
-        direction: 1
-      debt_to_equity:
-        weight: 0.20
-        direction: -1
       accruals:
-        weight: 0.15
+        weight: 0.375
         direction: -1
   momentum:
     weight: 0.25

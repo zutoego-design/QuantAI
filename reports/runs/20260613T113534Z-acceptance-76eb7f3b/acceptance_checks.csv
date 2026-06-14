@@ -1,0 +1,17 @@
+check,passed,details
+report_bundle_complete,True,[]
+source_run_valid,True,valid
+report_schema_version,True,1.0
+monthly_returns_compounded,True,
+daily_returns_complete,True,"{'portfolio_return': 0, 'benchmark_return': 0}"
+target_holding_count,True,range=25-100
+ml_ready_artifacts_complete,True,[]
+label_validation_passed,True,[]
+factor_metadata_complete,True,factors=13
+configured_factor_coverage,True,threshold=0.8; weak=[]; configured=13
+cost_sensitivity_complete,True,scenarios=4
+critic_audit_structured,True,eligible_for_human_review
+sector_attribution_reconciles,True,daily=True; linked=True
+walk_forward_metrics_complete,True,reports\runs\20260613T112925Z-backtest-6f94ed26\ml_evaluation\fold_metrics.csv
+delisting_sensitivity_complete,True,"[-1.0, -0.3, 0.0]"
+professional_metrics_complete,True,[]

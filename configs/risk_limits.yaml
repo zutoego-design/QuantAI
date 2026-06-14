@@ -1,5 +1,5 @@
 risk_limits:
-  benchmark: "^IXIC"
+  benchmark: "SPY"
   portfolio:
     max_single_name_weight: 0.05
     max_sector_weight: 0.25

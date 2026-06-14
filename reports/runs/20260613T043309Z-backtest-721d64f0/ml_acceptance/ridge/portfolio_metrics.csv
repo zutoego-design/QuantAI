@@ -1,0 +1,2 @@
+model_type,periods,gross_total_return,net_total_return,net_sharpe,average_turnover,transaction_cost_bps
+ridge,22,0.2892408864967164,0.27699057908093194,0.9672717603459221,0.4372727272727273,10.0

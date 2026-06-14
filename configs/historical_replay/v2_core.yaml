@@ -1,0 +1,25 @@
+candidate_id: v2_core
+description: Focused value and medium-term momentum rule score.
+factor_groups_mode: replace
+overrides:
+  strategy:
+    name: multifactor_value_momentum_v2_core
+  factor_groups:
+    value:
+      weight: 0.55
+      factors:
+        sales_yield:
+          weight: 0.50
+          direction: 1
+        earnings_yield:
+          weight: 0.50
+          direction: 1
+    momentum:
+      weight: 0.45
+      factors:
+        momentum_3m:
+          weight: 0.50
+          direction: 1
+        momentum_6m:
+          weight: 0.50
+          direction: 1

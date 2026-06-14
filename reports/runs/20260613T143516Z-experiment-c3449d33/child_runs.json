@@ -1,0 +1,26 @@
+[
+  {
+    "period": "full",
+    "run_id": "20260613T143517Z-backtest-cb353f2b"
+  },
+  {
+    "period": "top_n_30",
+    "run_id": "20260613T143639Z-backtest-23b122fa"
+  },
+  {
+    "period": "top_n_50",
+    "run_id": "20260613T143639Z-backtest-a770c9d4"
+  },
+  {
+    "period": "top_n_100",
+    "run_id": "20260613T143703Z-backtest-4fda9d4a"
+  },
+  {
+    "period": "rebalance_shift_-5",
+    "run_id": "20260613T143717Z-backtest-38ddce7b"
+  },
+  {
+    "period": "rebalance_shift_+5",
+    "run_id": "20260613T143815Z-backtest-58532424"
+  }
+]

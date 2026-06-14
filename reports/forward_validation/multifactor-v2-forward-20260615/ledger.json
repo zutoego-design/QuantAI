@@ -1,0 +1,35 @@
+{
+  "schema_version": "1.0",
+  "study_id": "multifactor-v2-forward-20260615",
+  "evaluation_scope": "six_month_forward_validation",
+  "source_replay_run_id": "20260614T131341Z-historical-replay-fb7304c3",
+  "source_replay_path": "D:\\QuantAI\\reports\\runs\\20260614T131341Z-historical-replay-fb7304c3",
+  "source_replay_decision": "challenger_only",
+  "start_date": "2026-06-15",
+  "end_date": "2026-12-15",
+  "created_at": "2026-06-14T13:32:24.243297+00:00",
+  "code_version": "f1deba84a7499a8e858dea54821d126453f19276",
+  "implementation_hash": "4861476fa6e25bdc9ba648aab870267e6937c5f1c14a8c6f4fb6f37af3a5b02d",
+  "immutable": true,
+  "strategies": [
+    {
+      "strategy_id": "v1_control",
+      "role": "control",
+      "config_hash": "80084eb681ed89814b157771b04296a1cccf88a287c508148dcff93e866bcda8",
+      "frozen_config": "D:\\QuantAI\\reports\\forward_validation\\multifactor-v2-forward-20260615\\frozen_configs\\v1_control.json"
+    },
+    {
+      "strategy_id": "v1_drawdown_fixed",
+      "role": "challenger",
+      "config_hash": "48b054d68658cdb4bff4a1872da4ea2a379e712c5fb48ba38a9fe2cc92bc4a0c",
+      "frozen_config": "D:\\QuantAI\\reports\\forward_validation\\multifactor-v2-forward-20260615\\frozen_configs\\v1_drawdown_fixed.json"
+    }
+  ],
+  "benchmark": "SPY",
+  "decision_policy": {
+    "maximum_drawdown": -0.2,
+    "minimum_cumulative_return": -0.15,
+    "maximum_invalid_data_days": 5,
+    "minimum_continue_conditions": 2
+  }
+}

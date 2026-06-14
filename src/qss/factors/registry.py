@@ -10,6 +10,7 @@ from qss.factors.base import FACTOR_VALUE_COLUMNS
 from qss.factors.momentum import compute_momentum_factors
 from qss.factors.preprocessing import process_factor_values
 from qss.factors.quality import compute_quality_factors
+from qss.factors.text_event import compute_risk_disclosure_factor
 from qss.factors.value import compute_value_factors
 from qss.factors.volatility import compute_volatility_factors
 
@@ -21,12 +22,13 @@ def _melt_factor_frame(
     universe: pd.DataFrame,
     config: AppConfig,
 ) -> pd.DataFrame:
-    melted = frame.melt(id_vars="symbol", var_name="factor_name", value_name="raw_value")
     direction_map = {
         factor_name: definition.direction
         for factor_name, definition in config.factor_groups[factor_group].factors.items()
     }
-    frame = frame[["symbol", *[name for name in direction_map if name in frame.columns]]]
+    configured_columns = [name for name in direction_map if name in frame.columns]
+    frame = frame[["symbol", *configured_columns]]
+    melted = frame.melt(id_vars="symbol", var_name="factor_name", value_name="raw_value")
     metadata = universe[["symbol", "sector", "market_cap"]].drop_duplicates("symbol")
     melted = melted.merge(metadata, on="symbol", how="left")
     melted["date"] = pd.Timestamp(date).normalize()
@@ -43,6 +45,8 @@ def compute_factor_values_for_date(
     fundamentals: pd.DataFrame,
     universe: pd.DataFrame,
     config: AppConfig,
+    filings: pd.DataFrame | None = None,
+    latest_fundamentals: pd.DataFrame | None = None,
 ) -> pd.DataFrame:
     eligible = universe.loc[universe["included"]].copy()
     if eligible.empty:
@@ -52,7 +56,12 @@ def compute_factor_values_for_date(
     if "value" in config.factor_groups:
         groups.append(
             _melt_factor_frame(
-                compute_value_factors(as_of_date, eligible, fundamentals),
+                compute_value_factors(
+                    as_of_date,
+                    eligible,
+                    fundamentals,
+                    latest_fundamentals=latest_fundamentals,
+                ),
                 "value",
                 as_of_date,
                 eligible,
@@ -62,7 +71,12 @@ def compute_factor_values_for_date(
     if "quality" in config.factor_groups:
         groups.append(
             _melt_factor_frame(
-                compute_quality_factors(as_of_date, eligible, fundamentals),
+                compute_quality_factors(
+                    as_of_date,
+                    eligible,
+                    fundamentals,
+                    latest_fundamentals=latest_fundamentals,
+                ),
                 "quality",
                 as_of_date,
                 eligible,
@@ -91,6 +105,23 @@ def compute_factor_values_for_date(
                 config,
             )
         )
+    if "text_event" in config.factor_groups:
+        groups.append(
+            _melt_factor_frame(
+                compute_risk_disclosure_factor(
+                    as_of_date,
+                    symbols,
+                    filings if filings is not None else pd.DataFrame(),
+                    config.text_factors.cache_directory,
+                    config.text_factors.risk_terms,
+                    config.text_factors.lookback_days,
+                ),
+                "text_event",
+                as_of_date,
+                eligible,
+                config,
+            )
+        )
     if not groups:
         return pd.DataFrame(columns=FACTOR_VALUE_COLUMNS)
     factor_values = pd.concat(groups, ignore_index=True)
@@ -112,7 +143,17 @@ def compute_and_store_factor_values(as_of_date: pd.Timestamp, config: AppConfig)
     universe = read_parquet(
         Path(config.paths.silver_data) / "universe" / "eligible_universe.parquet"
     )
-    factor_values = compute_factor_values_for_date(as_of_date, prices, fundamentals, universe.loc[universe["date"] == pd.Timestamp(as_of_date)], config)
+    filings = read_parquet(
+        Path(config.paths.silver_data) / "events" / "sec_filings.parquet"
+    )
+    factor_values = compute_factor_values_for_date(
+        as_of_date,
+        prices,
+        fundamentals,
+        universe.loc[universe["date"] == pd.Timestamp(as_of_date)],
+        config,
+        filings=filings,
+    )
     append_or_replace_parquet(
         factor_values,
         Path(config.paths.gold_data) / "factors" / "factor_values.parquet",

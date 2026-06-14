@@ -1,0 +1,23 @@
+{
+  "run_id": "20260613T150002Z-rebalance-152496dd",
+  "strategy_id": "multifactor_balanced_us",
+  "as_of_date": "2026-05-29",
+  "status": "rejected",
+  "candidate_weights": "D:\\QuantAI\\reports\\approvals\\20260613T150002Z-rebalance-152496dd\\candidate_target_weights.csv",
+  "internal_orders": "D:\\QuantAI\\reports\\approvals\\20260613T150002Z-rebalance-152496dd\\internal_orders.csv",
+  "approved_export": null,
+  "risk_checks": {
+    "target_holding_count": true,
+    "optimizer_no_fallback": true,
+    "weight_constraints_valid": true
+  },
+  "history": [
+    {
+      "from_state": "review_required",
+      "to_state": "rejected",
+      "reviewer": "v0.3-acceptance@quantai.local",
+      "note": "P1 rejection-path rehearsal; held out as an independent negative governance example.",
+      "changed_at": "2026-06-13T15:00:28.127456+00:00"
+    }
+  ]
+}

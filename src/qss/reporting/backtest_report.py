@@ -17,6 +17,7 @@ def render_backtest_report(
     factor_diagnostics: pd.DataFrame | None = None,
     data_diagnostics: pd.DataFrame | None = None,
     delisting_sensitivity: pd.DataFrame | None = None,
+    sector_attribution: pd.DataFrame | None = None,
     manifest: dict | None = None,
 ) -> str:
     frame = daily_returns.copy()
@@ -35,10 +36,43 @@ def render_backtest_report(
         barmode="group",
         title="Compounded Monthly Returns",
     )
-    warning = (
-        "Free-data research track: long history is approximate and must not be described "
-        "as fully survivorship-bias free."
+    bias_flags = set((manifest or {}).get("bias_flags", []))
+    membership_mode = (
+        (manifest or {})
+        .get("config", {})
+        .get("universe", {})
+        .get("membership_mode")
     )
+    long_history_provider = (
+        (manifest or {})
+        .get("config", {})
+        .get("universe", {})
+        .get("long_history_provider")
+    )
+    if (
+        "current_membership_backfilled_survivorship_bias" in bias_flags
+        or membership_mode == "current_snapshot"
+    ):
+        warning = (
+            "Current-membership backtest: today's Nasdaq universe is backfilled across "
+            "history. Results contain survivorship bias and omit historical constituent "
+            "changes and many delisted securities."
+        )
+    elif (
+        "sp500_point_in_time_wikipedia_reconstruction" in bias_flags
+        or long_history_provider == "sp500_wikipedia"
+    ):
+        warning = (
+            "S&P 500 point-in-time backtest: membership is reconstructed from the "
+            "current constituents table and historical constituent-change log. This "
+            "avoids current-membership backfill, while still depending on free-source "
+            "coverage for historical prices and SEC fundamentals."
+        )
+    else:
+        warning = (
+            "Free-data research track: long history is approximate and must not be "
+            "described as fully survivorship-bias free."
+        )
     manifest_html = (
         f"<pre>{html.escape(str(manifest))}</pre>" if manifest is not None else ""
     )
@@ -70,6 +104,8 @@ def render_backtest_report(
         {rebalances.to_html(index=False)}
         <h2>Portfolio Concentration</h2>
         {(holdings if holdings is not None else pd.DataFrame()).to_html(index=False)}
+        <h2>Sector Return Attribution</h2>
+        {(sector_attribution if sector_attribution is not None else pd.DataFrame()).to_html(index=False)}
         <h2>Factor Diagnostics</h2>
         {(factor_diagnostics if factor_diagnostics is not None else pd.DataFrame()).to_html(index=False)}
         <h2>Data Quality And Coverage</h2>

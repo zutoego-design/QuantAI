@@ -28,3 +28,28 @@ def test_risk_alerts_trigger_and_data_quality_flags():
     )
     quality = check_data_quality("fundamentals_quarterly", frame, ["symbol", "period_end_date", "filing_date"])
     assert "missing_available_date" in set(quality["rule"])
+
+
+def test_risk_alerts_ignore_solver_rounding_at_limit():
+    config = get_config(["configs/default.yaml"])
+    metrics = {
+        "daily_loss": 0.0,
+        "drawdown": 0.0,
+        "realized_vol": 0.0,
+        "beta": 1.0,
+        "single_name_weight": config.risk_limits.portfolio.max_single_name_weight
+        + 1e-10,
+        "tracking_error": 0.0,
+    }
+    sector_df = pd.DataFrame(
+        {
+            "sector": ["Tech"],
+            "sector_weight": [
+                config.risk_limits.portfolio.max_sector_weight + 1e-10
+            ],
+        }
+    )
+
+    alerts = generate_alerts(metrics, sector_df, config.risk_limits)
+
+    assert alerts.empty

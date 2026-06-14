@@ -1,0 +1,6 @@
+candidate_id: v1_control
+description: Frozen current multifactor strategy used as the historical control.
+factor_groups_mode: merge
+overrides:
+  strategy:
+    name: multifactor_balanced_us_v1_control

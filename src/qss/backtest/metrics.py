@@ -2,9 +2,9 @@ from __future__ import annotations
 
 import numpy as np
 import pandas as pd
-from scipy import stats
 
 from qss.backtest.accounting import compute_drawdown
+from qss.research.statistics import benjamini_hochberg, newey_west_mean_test
 from qss.utils import annualize_return, annualize_volatility
 
 
@@ -199,22 +199,24 @@ def factor_diagnostics(
         series = pd.Series(daily_ic, dtype=float).dropna()
         mean_ic = float(series.mean()) if not series.empty else np.nan
         std_ic = float(series.std(ddof=1)) if len(series) > 1 else np.nan
+        mean_test = newey_west_mean_test(series)
         rows.append(
             {
                 "factor_name": factor_name,
                 "ic": float(pd.Series(daily_pearson_ic).mean()) if daily_pearson_ic else np.nan,
                 "rank_ic": mean_ic,
                 "ic_ir": mean_ic / std_ic if std_ic and not np.isnan(std_ic) else np.nan,
-                "t_stat": (
-                    float(stats.ttest_1samp(series, 0).statistic)
-                    if len(series) > 1 and series.std(ddof=1) > 0
-                    else np.nan
-                ),
+                "t_stat": mean_test.t_stat,
+                "p_value": mean_test.p_value,
                 "coverage": float(np.mean(coverage)) if coverage else 0.0,
                 "missing_rate": float(merged.loc[merged["factor_name"] == factor_name, "processed_value"].isna().mean()),
             }
         )
-    return pd.DataFrame(rows), pd.DataFrame(quantile_rows)
+    summary = pd.DataFrame(rows)
+    if not summary.empty:
+        summary["fdr_q_value"] = benjamini_hochberg(summary["p_value"])
+        summary["fdr_significant"] = summary["fdr_q_value"] <= 0.05
+    return summary, pd.DataFrame(quantile_rows)
 
 
 def forward_returns_for_factors(

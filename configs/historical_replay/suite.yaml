@@ -1,0 +1,43 @@
+study_id: multifactor-v2-historical-replay
+evaluation_scope: exploratory_historical_replay
+candidates:
+  - configs/historical_replay/v1_control.yaml
+  - configs/historical_replay/v1_drawdown_fixed.yaml
+  - configs/historical_replay/v2_core.yaml
+  - configs/historical_replay/v2_core_defensive.yaml
+folds:
+  - development_start: 2016-01-01
+    development_end: 2018-12-31
+    test_start: 2019-01-01
+    test_end: 2019-12-31
+  - development_start: 2017-01-01
+    development_end: 2019-12-31
+    test_start: 2020-01-01
+    test_end: 2020-12-31
+  - development_start: 2018-01-01
+    development_end: 2020-12-31
+    test_start: 2021-01-01
+    test_end: 2021-12-31
+  - development_start: 2019-01-01
+    development_end: 2021-12-31
+    test_start: 2022-01-01
+    test_end: 2022-12-31
+  - development_start: 2020-01-01
+    development_end: 2022-12-31
+    test_start: 2023-01-01
+    test_end: 2023-12-31
+  - development_start: 2021-01-01
+    development_end: 2023-12-31
+    test_start: 2024-01-01
+    test_end: 2024-12-31
+  - development_start: 2022-01-01
+    development_end: 2024-12-31
+    test_start: 2025-01-01
+    test_end: 2025-12-31
+selection:
+  minimum_positive_years: 5
+  minimum_spy_outperformance_years: 4
+  minimum_sharpe_improvement: 0.10
+  maximum_drawdown_deterioration: 0.02
+  robustness_maximum_sharpe_decline: 0.30
+  required_cost_bps: 25.0

@@ -1,0 +1,2 @@
+model_type,periods,gross_total_return,net_total_return,net_sharpe,average_turnover,transaction_cost_bps
+elastic_net,100,1.1104778902567056,1.0733448066277225,0.4627782346256751,0.1804,10.0

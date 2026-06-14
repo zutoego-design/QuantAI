@@ -8,6 +8,7 @@ import numpy as np
 import pandas as pd
 
 from qss.config.schema import AppConfig
+from qss.data.storage import write_parquet
 from qss.macro.regime import compute_macro_regime
 from qss.reporting.risk_report import render_risk_report
 from qss.risk.alerts import generate_alerts
@@ -103,7 +104,12 @@ def _run_daily_risk_monitor(as_of_date, config, context) -> RiskReport:
     html = render_risk_report(as_of_date, metrics, portfolio, sector_df, alerts, macro_summary)
     html_path = context.path("report.html")
     html_path.write_text(html, encoding="utf-8")
-    pd.DataFrame([metrics]).to_parquet(Path(config.paths.gold_data) / "risk_reports" / f"risk_report_{report_date}.parquet", index=False)
+    write_parquet(
+        pd.DataFrame([metrics]),
+        Path(config.paths.gold_data)
+        / "risk_reports"
+        / f"risk_report_{report_date}.parquet",
+    )
     pd.DataFrame([metrics]).to_csv(context.path("metrics.csv"), index=False)
     context.update(status="valid", quality_gates={"held_returns_complete": True})
     return RiskReport(

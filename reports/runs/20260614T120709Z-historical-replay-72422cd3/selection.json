@@ -1,0 +1,10 @@
+{
+  "study_id": "multifactor-v2-historical-replay",
+  "evaluation_scope": "exploratory_historical_replay",
+  "decision": "challenger_only",
+  "selected_strategy_id": null,
+  "challenger_strategy_id": "v1_drawdown_fixed",
+  "control_strategy_id": "v1_control",
+  "forward_strategy_id": "v1_drawdown_fixed",
+  "data_snapshot_id": "6018dcfa1a1d41d513a0840db5a0b2d3d645525e360439cce7f97709d08293e5"
+}

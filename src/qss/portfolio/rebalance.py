@@ -1,16 +1,22 @@
 from __future__ import annotations
 
+import json
 from dataclasses import dataclass
 from pathlib import Path
 
 import pandas as pd
 
+from qss.approval.workflow import create_approval_packet
 from qss.config.schema import AppConfig
 from qss.data.storage import append_or_replace_parquet, read_parquet, write_csv
 from qss.data.validation import validate_research_data
+from qss.experiments.registry import ExperimentRegistry, registry_record_from_run
 from qss.logging_utils import logger
 from qss.portfolio.constraints import validate_weights
-from qss.portfolio.optimizer import OptimizationResult, optimize_portfolio_with_status
+from qss.portfolio.optimizer import (
+    OptimizationResult,
+    optimize_portfolio_to_target_count,
+)
 from qss.portfolio.orders import build_orders
 from qss.reporting.rebalance_report import render_rebalance_report
 from qss.risk.covariance import estimate_covariance_from_prices
@@ -25,6 +31,8 @@ class RebalanceRun:
     warning: str | None
     run_id: str
     run_path: Path
+    approval_status: str
+    approval_packet: Path
 
 
 def run_rebalance(
@@ -67,7 +75,7 @@ def _run_rebalance(as_of_date, config, context) -> RebalanceRun:
             previous = existing_weights.loc[existing_weights["date"] == latest_date].set_index("symbol")["target_weight"]
 
     covariance = estimate_covariance_from_prices(prices, scores["symbol"].tolist(), as_of_date, config.optimizer.covariance)
-    opt_result: OptimizationResult = optimize_portfolio_with_status(
+    opt_result: OptimizationResult = optimize_portfolio_to_target_count(
         scores=scores,
         covariance=covariance,
         previous_weights=previous,
@@ -95,8 +103,29 @@ def _run_rebalance(as_of_date, config, context) -> RebalanceRun:
         Path(config.paths.gold_data) / "portfolios" / "portfolio_weights.parquet",
         ["date", "strategy_name", "symbol"],
     )
-    write_csv(portfolio, context.path("target_weights.csv"))
-    write_csv(orders, context.path("orders.csv"))
+    write_csv(portfolio, context.path("candidate_target_weights.csv"))
+    write_csv(orders, context.path("internal_orders.csv"))
+    risk_checks = {
+        "target_holding_count": len(portfolio) == expected_holdings,
+        "optimizer_no_fallback": opt_result.status != "fallback",
+        "weight_constraints_valid": True,
+    }
+    packet, packet_path = create_approval_packet(
+        config,
+        context.manifest.run_id,
+        as_of_date,
+        portfolio,
+        orders,
+        risk_checks,
+    )
+    context.path("approval_packet.json").write_text(
+        packet.model_dump_json(indent=2),
+        encoding="utf-8",
+    )
+    context.path("approval_pointer.json").write_text(
+        json.dumps({"path": str(packet_path)}, indent=2),
+        encoding="utf-8",
+    )
     html = render_rebalance_report(
         as_of_date=as_of_date,
         portfolio=portfolio,
@@ -109,10 +138,29 @@ def _run_rebalance(as_of_date, config, context) -> RebalanceRun:
     context.update(
         status="valid",
         quality_gates={
-            "target_holding_count": len(portfolio) == expected_holdings,
-            "optimizer_no_fallback": opt_result.status != "fallback",
+            **risk_checks,
+            "human_approval_required": config.approval.require_human_approval,
         },
+        notes=[
+            "Candidate weights are not publishable until a human transitions the "
+            "approval packet to approved_for_candidate."
+        ],
     )
+    if config.registry.enabled:
+        ExperimentRegistry.from_config(config).upsert(
+            registry_record_from_run(
+                config,
+                context.manifest.run_id,
+                "rebalance",
+                context.root,
+                status=context.manifest.status,
+                created_at=context.manifest.created_at,
+                config_hash=context.manifest.config_hash,
+                start_date=str(as_of_date.date()),
+                end_date=str(as_of_date.date()),
+                approval_status=packet.status,
+            )
+        )
     logger.info("Rebalance report written to {}", report_path)
     return RebalanceRun(
         portfolio=portfolio,
@@ -121,4 +169,6 @@ def _run_rebalance(as_of_date, config, context) -> RebalanceRun:
         warning=opt_result.warning,
         run_id=context.manifest.run_id,
         run_path=context.root,
+        approval_status=packet.status,
+        approval_packet=packet_path,
     )

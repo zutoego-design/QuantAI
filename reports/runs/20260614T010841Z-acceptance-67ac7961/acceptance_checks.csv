@@ -1,0 +1,14 @@
+check,passed,details
+confirmatory_artifacts_complete,True,[]
+source_run_valid,True,valid
+preregistered_protocol_identity,True,stage=confirmatory
+holdout_label_gap,True,business_days=23
+data_snapshot_identity,True,d3d982b31c63aecc03962854e979de95a6cfe4d6e215e6cc0f27c04f005d0290
+child_run_identity,True,children=1
+robustness_config_diffs,True,rows=1
+shared_holdout_ledger_complete,True,[]
+bootstrap_reproducible,True,samples=2000
+deflated_sharpe_reproducible,True,trials=1
+style_regression_reproducible,True,coverage=1.0
+factor_evidence_reproducible,True,factors=13
+research_decision_reproducible,True,rejected

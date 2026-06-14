@@ -1,0 +1,3 @@
+experiment_run_id,child_run_id,model_type,evaluation_scope,evidence_status,status,acceptance_status,net_total_return,net_sharpe,average_turnover,cagr,max_drawdown,mean_rank_ic,text_coverage,bias_recommendation,recommendation
+20260614T011051Z-experiment-ec84fa0a,20260614T011053Z-backtest-01d3a9b7,rule_score,holdout,rejected,valid,valid,0.3369368718284378,1.4321458514448706,0.1026951849693685,0.2282011910256358,-0.1386062811371811,,,hold_for_further_testing,rejected
+20260613T133519Z-experiment-7ad846cd,20260613T133520Z-backtest-11107a4e,rule_score,legacy_reference,legacy_reference,valid,valid,6.249581013302713,1.1341951585370986,0.0482613181050563,0.2094559046364972,-0.3360310663748761,,,eligible_for_human_review,legacy_reference

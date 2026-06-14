@@ -1,0 +1,8 @@
+{
+  "candidate_id": "v1_drawdown_fixed",
+  "description": "Current multifactor strategy with corrected trailing drawdown direction.",
+  "candidate_file": "D:\\QuantAI\\configs\\historical_replay\\v1_drawdown_fixed.yaml",
+  "candidate_file_sha256": "b6472740acf9ea568602d2582bc59dd2aa169b927fe1956932333208b740fb49",
+  "config_hash": "48b054d68658cdb4bff4a1872da4ea2a379e712c5fb48ba38a9fe2cc92bc4a0c",
+  "data_snapshot_id": "d3d982b31c63aecc03962854e979de95a6cfe4d6e215e6cc0f27c04f005d0290"
+}

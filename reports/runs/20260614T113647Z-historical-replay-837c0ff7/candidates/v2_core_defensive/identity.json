@@ -1,0 +1,8 @@
+{
+  "candidate_id": "v2_core_defensive",
+  "description": "Focused value and momentum score with tighter portfolio risk constraints.",
+  "candidate_file": "D:\\QuantAI\\configs\\historical_replay\\v2_core_defensive.yaml",
+  "candidate_file_sha256": "b78ba2997fb27949426d89d98eecdf6e6a0688ff5bff53e67eb122843db3f46d",
+  "config_hash": "a1d5846f3b19a201bb114b4e9b5315ab3f70854eea5d7c25cd1209389dc4cde7",
+  "data_snapshot_id": "d3d982b31c63aecc03962854e979de95a6cfe4d6e215e6cc0f27c04f005d0290"
+}

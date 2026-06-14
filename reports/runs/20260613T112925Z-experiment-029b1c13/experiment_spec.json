@@ -1,0 +1,56 @@
+{
+  "hypothesis": "Ridge improves cost-aware out-of-sample ranking over the rule-score baseline.",
+  "universe": "sp500_historical_standard",
+  "factors": [
+    "accruals",
+    "beta_to_spy",
+    "book_to_market",
+    "earnings_yield",
+    "free_cash_flow_yield",
+    "max_drawdown_252d",
+    "momentum_12_1",
+    "momentum_3m",
+    "momentum_6m",
+    "realized_vol_252d",
+    "realized_vol_60d",
+    "roe",
+    "sales_yield"
+  ],
+  "preprocessing": {},
+  "portfolio": {
+    "target_num_holdings": 50,
+    "max_weight": 0.05,
+    "max_sector_weight": 0.25,
+    "max_turnover_per_rebalance": 0.3
+  },
+  "costs": {
+    "commission_bps": 1.0,
+    "slippage_bps": 5.0,
+    "market_impact_coefficient": 0.1,
+    "max_adv_participation": 0.1
+  },
+  "model": {
+    "enabled": true,
+    "model_type": "ridge",
+    "target": "cross_sectional_rank",
+    "parameters": {
+      "alpha": 1.0
+    },
+    "portfolio_top_n": 50,
+    "transaction_cost_bps": 10.0,
+    "walk_forward": {
+      "train_periods": 24,
+      "min_train_periods": 12,
+      "test_periods": 3,
+      "step_periods": 3,
+      "rolling": false,
+      "purge": true,
+      "embargo_days": 5
+    }
+  },
+  "robustness_tests": [],
+  "start_date": "2016-01-01",
+  "end_date": "2026-06-11",
+  "seed": 42,
+  "max_years": 20
+}

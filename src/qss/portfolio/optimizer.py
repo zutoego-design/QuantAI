@@ -18,8 +18,46 @@ class OptimizationResult:
     warning: str | None = None
 
 
-def build_equal_weight_portfolio(scores: pd.DataFrame, top_n: int) -> pd.DataFrame:
-    candidates = scores.sort_values("total_score", ascending=False).head(top_n).copy()
+def build_equal_weight_portfolio(
+    scores: pd.DataFrame,
+    top_n: int,
+    *,
+    max_sector_weight: float | None = None,
+) -> pd.DataFrame:
+    ranked = scores.sort_values("total_score", ascending=False)
+    if max_sector_weight is None:
+        candidates = ranked.head(top_n).copy()
+    else:
+        max_names_per_sector = max(
+            1,
+            int(np.floor(max_sector_weight * top_n + 1e-12)),
+        )
+        selected: list[int] = []
+        sector_counts: dict[str, int] = {}
+        for index, row in ranked.iterrows():
+            sector = str(row.get("sector", "")).strip()
+            constrained = sector.lower() not in {
+                "",
+                "unknown",
+                "unclassified",
+                "nan",
+            }
+            if (
+                constrained
+                and sector_counts.get(sector, 0) >= max_names_per_sector
+            ):
+                continue
+            selected.append(index)
+            if constrained:
+                sector_counts[sector] = sector_counts.get(sector, 0) + 1
+            if len(selected) == top_n:
+                break
+        candidates = ranked.loc[selected].copy()
+        if len(candidates) < min(top_n, len(ranked)):
+            raise ValueError(
+                f"Only {len(candidates)} of {top_n} requested holdings can satisfy "
+                f"the {max_sector_weight:.2%} sector limit."
+            )
     if candidates.empty:
         return pd.DataFrame(columns=["symbol", "target_weight", "previous_weight", "trade_weight", "sector", "alpha_score"])
     weight = 1.0 / len(candidates)
@@ -41,6 +79,64 @@ def optimize_portfolio(
     return result.weights
 
 
+def optimize_portfolio_to_target_count(
+    scores: pd.DataFrame,
+    covariance: pd.DataFrame,
+    previous_weights: pd.Series,
+    sector_map: pd.Series,
+    config: OptimizerConfig,
+) -> OptimizationResult:
+    broad = optimize_portfolio_with_status(
+        scores,
+        covariance,
+        previous_weights,
+        sector_map,
+        config,
+    )
+    target = min(config.constraints.target_num_holdings, len(scores))
+    if broad.status == "fallback" or len(broad.weights) == target:
+        return broad
+
+    selected_order = broad.weights.sort_values(
+        "target_weight",
+        ascending=False,
+    )["symbol"].astype(str).tolist()
+    selected_order.extend(
+        scores.sort_values("total_score", ascending=False)["symbol"]
+        .astype(str)
+        .tolist()
+    )
+    selected = set(list(dict.fromkeys(selected_order))[:target])
+    restricted_scores = scores.loc[
+        scores["symbol"].astype(str).isin(selected)
+    ].copy()
+    exact_config = config.model_copy(deep=True)
+    exact_config.candidate_count = target
+    exact_config.fallback.top_n = target
+    exact_config.constraints.min_weight = max(
+        exact_config.constraints.min_weight,
+        1e-4,
+    )
+    exact = optimize_portfolio_with_status(
+        restricted_scores,
+        covariance,
+        previous_weights,
+        sector_map,
+        exact_config,
+    )
+    if exact.status == "fallback" or len(exact.weights) != target:
+        return OptimizationResult(
+            weights=exact.weights,
+            status="fallback",
+            warning=(
+                f"Exact-cardinality optimization produced {len(exact.weights)} "
+                f"holdings; {target} are required. {exact.warning or ''}"
+            ).strip(),
+        )
+    exact.status = f"{exact.status}_target_cardinality"
+    return exact
+
+
 def optimize_portfolio_with_status(
     scores: pd.DataFrame,
     covariance: pd.DataFrame,
@@ -49,7 +145,22 @@ def optimize_portfolio_with_status(
     config: OptimizerConfig,
 ) -> OptimizationResult:
     target_holdings = min(config.constraints.target_num_holdings, len(scores))
-    candidates = scores.sort_values("total_score", ascending=False).head(target_holdings).copy()
+    candidate_count = min(
+        max(int(config.candidate_count), target_holdings),
+        len(scores),
+    )
+    ranked = scores.sort_values("total_score", ascending=False)
+    candidates = ranked.head(candidate_count).copy()
+    existing_symbols = set(
+        previous_weights.loc[previous_weights.abs() > 1e-8].index.astype(str)
+    )
+    if existing_symbols:
+        held_candidates = ranked.loc[ranked["symbol"].astype(str).isin(existing_symbols)]
+        candidates = (
+            pd.concat([candidates, held_candidates], ignore_index=True)
+            .drop_duplicates("symbol", keep="first")
+            .copy()
+        )
     if candidates.empty:
         return OptimizationResult(weights=build_equal_weight_portfolio(scores, config.fallback.top_n), status="fallback", warning="No candidates available.")
 
@@ -109,9 +220,11 @@ def optimize_portfolio_with_status(
         portfolio["target_weight"] = portfolio["target_weight"].clip(lower=0.0)
         portfolio["target_weight"] = portfolio["target_weight"] / portfolio["target_weight"].sum()
         portfolio = portfolio.loc[portfolio["target_weight"] > 1e-8].copy()
-        if len(portfolio) != target_holdings:
+        minimum_holdings = min(target_holdings, max(1, int(target_holdings * 0.5)))
+        if len(portfolio) < minimum_holdings:
             raise ValueError(
-                f"Optimizer produced {len(portfolio)} holdings; expected {target_holdings}."
+                f"Optimizer produced {len(portfolio)} holdings; "
+                f"minimum acceptable is {minimum_holdings}."
             )
         portfolio["trade_weight"] = portfolio["target_weight"] - portfolio["previous_weight"]
         validate_weights(portfolio, config.constraints.max_weight, config.constraints.max_sector_weight)

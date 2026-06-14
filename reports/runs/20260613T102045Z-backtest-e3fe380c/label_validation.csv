@@ -1,0 +1,5 @@
+check,passed,details
+required_columns,True,[]
+positive_horizon_alignment,True,invalid=0
+overlap_requires_purge,True,overlap=9360; purge=9360
+no_future_feature_leakage,True,violations=0

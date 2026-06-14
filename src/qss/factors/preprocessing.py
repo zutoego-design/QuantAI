@@ -25,11 +25,16 @@ def winsorize_cross_section(
 def zscore_cross_section(df: pd.DataFrame, value_col: str) -> pd.DataFrame:
     out = df.copy()
     series = out[value_col]
-    std = series.std(ddof=0)
-    if pd.isna(std) or std == 0:
-        out[value_col] = 0.0
+    valid = series.notna()
+    if not valid.any():
         return out
-    out[value_col] = (series - series.mean()) / std
+    std = series.loc[valid].std(ddof=0)
+    if pd.isna(std) or std == 0:
+        out.loc[valid, value_col] = 0.0
+        return out
+    out.loc[valid, value_col] = (
+        series.loc[valid] - series.loc[valid].mean()
+    ) / std
     return out
 
 

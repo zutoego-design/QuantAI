@@ -1,0 +1,173 @@
+{
+  "schema_version": "1.0",
+  "run_id": "20260613T125832Z-backtest-3c78d4b6",
+  "status": "valid",
+  "metrics": [
+    {
+      "category": "performance",
+      "metric": "total_return",
+      "value": 2.018706182955599
+    },
+    {
+      "category": "performance",
+      "metric": "gross_total_return",
+      "value": 2.0282685835425536
+    },
+    {
+      "category": "performance",
+      "metric": "net_total_return",
+      "value": 2.018706182955599
+    },
+    {
+      "category": "performance",
+      "metric": "benchmark_total_return",
+      "value": 0.8764448064288823
+    },
+    {
+      "category": "performance",
+      "metric": "cagr",
+      "value": 0.23640488119850378
+    },
+    {
+      "category": "performance",
+      "metric": "annualized_volatility",
+      "value": 0.17409430057478473
+    },
+    {
+      "category": "performance",
+      "metric": "downside_volatility",
+      "value": 0.11868263134052222
+    },
+    {
+      "category": "performance",
+      "metric": "sharpe_ratio",
+      "value": 1.3064869994788804
+    },
+    {
+      "category": "performance",
+      "metric": "sortino_ratio",
+      "value": 1.9164720044984804
+    },
+    {
+      "category": "performance",
+      "metric": "calmar_ratio",
+      "value": 0.9276954836056468
+    },
+    {
+      "category": "performance",
+      "metric": "omega_ratio",
+      "value": 1.2523822274929033
+    },
+    {
+      "category": "performance",
+      "metric": "max_drawdown",
+      "value": -0.25483025990347163
+    },
+    {
+      "category": "performance",
+      "metric": "var_95_daily",
+      "value": -0.017534351893914446
+    },
+    {
+      "category": "performance",
+      "metric": "cvar_95_daily",
+      "value": -0.024752602218817865
+    },
+    {
+      "category": "benchmark",
+      "metric": "alpha_annualized",
+      "value": 0.09719427419932485
+    },
+    {
+      "category": "benchmark",
+      "metric": "beta",
+      "value": 0.9651638344147733
+    },
+    {
+      "category": "benchmark",
+      "metric": "correlation",
+      "value": 0.9295892253693572
+    },
+    {
+      "category": "benchmark",
+      "metric": "r_squared",
+      "value": 0.8641361279228015
+    },
+    {
+      "category": "benchmark",
+      "metric": "tracking_error",
+      "value": 0.06443597176313186
+    },
+    {
+      "category": "benchmark",
+      "metric": "information_ratio",
+      "value": 1.435422067159058
+    },
+    {
+      "category": "benchmark",
+      "metric": "up_capture",
+      "value": 1.0307600284037248
+    },
+    {
+      "category": "benchmark",
+      "metric": "down_capture",
+      "value": 0.9304024234560422
+    },
+    {
+      "category": "portfolio",
+      "metric": "average_turnover",
+      "value": 0.05890757550228084
+    },
+    {
+      "category": "portfolio",
+      "metric": "average_number_of_holdings",
+      "value": 43.523809523809526
+    },
+    {
+      "category": "portfolio",
+      "metric": "cost_drag",
+      "value": 0.009562400586954567
+    },
+    {
+      "category": "portfolio",
+      "metric": "max_adv_participation",
+      "value": 0.0005270138220170556
+    },
+    {
+      "category": "portfolio",
+      "metric": "average_holding_period_days",
+      "value": 665.354609929078
+    },
+    {
+      "category": "portfolio",
+      "metric": "estimated_capacity",
+      "value": 189748344.01357263
+    },
+    {
+      "category": "portfolio",
+      "metric": "average_hhi",
+      "value": 0.03964310386839582
+    },
+    {
+      "category": "portfolio",
+      "metric": "average_effective_holdings",
+      "value": 25.424785498340086
+    }
+  ],
+  "artifacts": {
+    "daily_returns": "daily_returns.parquet",
+    "rebalances": "rebalances.parquet",
+    "holdings": "holdings.parquet",
+    "trades": "trades.parquet",
+    "factor_diagnostics": "factor_diagnostics.csv",
+    "factor_metadata": "factor_metadata.json",
+    "feature_snapshot": "feature_snapshot.parquet",
+    "label_config": "label_config.json",
+    "cost_sensitivity": "cost_sensitivity.csv",
+    "sector_return_attribution": "sector_return_attribution.csv",
+    "sector_return_attribution_summary": "sector_return_attribution_summary.csv",
+    "bias_review": "bias_review.md",
+    "data_diagnostics": "data_diagnostics.csv",
+    "html": "report.html"
+  }
+}

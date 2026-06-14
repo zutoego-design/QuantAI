@@ -1,0 +1,16 @@
+{
+  "status": "stopping",
+  "stage": "starting",
+  "message": "Stop requested; the current provider operation will finish first.",
+  "progress": "",
+  "pid": 30960,
+  "started_at": "2026-06-13T05:22:47.818177+00:00",
+  "updated_at": "2026-06-13T05:23:38.185672+00:00",
+  "next_resume_at": null,
+  "start_date": "2023-01-01",
+  "end_date": "2026-06-11",
+  "run_backtest": true,
+  "stop_requested": true,
+  "validation_run": null,
+  "backtest_run": null
+}

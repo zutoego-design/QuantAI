@@ -1,0 +1,9 @@
+check,passed,details
+report_bundle_complete,True,[]
+source_run_valid,True,valid
+report_schema_version,True,1.0
+monthly_returns_compounded,True,
+daily_returns_complete,True,"{'portfolio_return': 0, 'benchmark_return': 0}"
+target_holding_count,True,range=25-100
+delisting_sensitivity_complete,True,"[-1.0, -0.3, 0.0]"
+professional_metrics_complete,True,[]

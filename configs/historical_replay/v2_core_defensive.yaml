@@ -1,0 +1,31 @@
+candidate_id: v2_core_defensive
+description: Focused value and momentum score with tighter portfolio risk constraints.
+factor_groups_mode: replace
+overrides:
+  strategy:
+    name: multifactor_value_momentum_v2_core_defensive
+  factor_groups:
+    value:
+      weight: 0.55
+      factors:
+        sales_yield:
+          weight: 0.50
+          direction: 1
+        earnings_yield:
+          weight: 0.50
+          direction: 1
+    momentum:
+      weight: 0.45
+      factors:
+        momentum_3m:
+          weight: 0.50
+          direction: 1
+        momentum_6m:
+          weight: 0.50
+          direction: 1
+  optimizer:
+    constraints:
+      max_weight: 0.04
+      max_sector_weight: 0.20
+      max_turnover_per_rebalance: 0.20
+      tracking_error_limit: 0.08

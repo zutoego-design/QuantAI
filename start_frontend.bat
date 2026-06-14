@@ -45,6 +45,12 @@ if errorlevel 1 (
     )
 )
 
+echo Generating comprehensive report from the latest research result...
+call "%VENV_PYTHON%" -m qss.cli comprehensive-report
+if errorlevel 1 (
+    echo [WARN] No comprehensive report was generated. The dashboard will still start.
+)
+
 echo Starting Streamlit dashboard...
 echo URL: http://127.0.0.1:8501
 echo.

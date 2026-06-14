@@ -1,0 +1,23 @@
+# Research Memo
+
+## Hypothesis
+Configured rule-score factors provide the canonical non-ML baseline.
+
+## Data Gate
+Passed all configured point-in-time and coverage checks.
+
+## Workflow
+- Single-factor diagnostics: generated in the full child run.
+- Portfolio backtest: completed.
+- Subperiod checks: completed when the sample spans at least two years.
+- Cost and delisting sensitivity: generated in every child run.
+- Legacy baseline comparison: generated when the legacy metric file is available.
+
+## Result
+- Full child backtest run: `20260613T143517Z-backtest-cb353f2b`
+- CAGR: `0.2125`
+- Sharpe: `1.4280`
+- Max drawdown: `-0.1773`
+
+## Promotion Decision
+Eligible for human review. No automated strategy promotion is performed.

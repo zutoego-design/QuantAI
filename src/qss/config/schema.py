@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Any
+from typing import Any, Literal
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
@@ -41,6 +41,8 @@ class FundamentalsSourceConfig(BaseModel):
     filing_types: list[str] = Field(default_factory=lambda: ["10-K", "10-Q"])
     user_agent: str = "QuantAI Research bot contact@example.com"
     fallback_to_synthetic: bool = False
+    cache_days: int = 7
+    max_workers: int = 4
 
 
 class MacroSourceConfig(BaseModel):
@@ -84,6 +86,7 @@ class UniverseConfig(BaseModel):
     rebalance_frequency: str
     exchange: str = "XNAS"
     start_date: str = "2010-01-01"
+    membership_mode: Literal["point_in_time", "current_snapshot"] = "point_in_time"
     allowed_security_types: list[str] = Field(
         default_factory=lambda: ["Common Stock", "ADR", "REIT"]
     )
@@ -95,6 +98,7 @@ class UniverseConfig(BaseModel):
     min_long_price_coverage: float = 0.95
     min_sector_coverage: float = 0.90
     max_remote_requests_per_sync: int = 25
+    remote_request_interval_seconds: float = 12.0
 
 
 class WinsorizeConfig(BaseModel):
@@ -252,6 +256,98 @@ class BacktestConfig(BaseModel):
     secondary_benchmark: str = "QQQ"
 
 
+class LabelsConfig(BaseModel):
+    enabled: bool = True
+    label_types: list[Literal["forward_return", "cross_sectional_rank"]] = Field(
+        default_factory=lambda: ["forward_return", "cross_sectional_rank"]
+    )
+    horizon_days: int = 21
+    start_offset_days: int = 0
+    embargo_days: int = 5
+    version: str = "v1"
+
+
+class WalkForwardConfig(BaseModel):
+    train_periods: int = 24
+    test_periods: int = 3
+    step_periods: int = 3
+    min_train_periods: int = 12
+    rolling: bool = False
+    purge: bool = True
+    embargo_days: int = 5
+
+
+class MLConfig(BaseModel):
+    enabled: bool = False
+    model_type: Literal["ridge", "elastic_net", "lightgbm"] = "ridge"
+    target: Literal["forward_return", "cross_sectional_rank"] = "cross_sectional_rank"
+    parameters: dict[str, Any] = Field(default_factory=dict)
+    portfolio_top_n: int = 50
+    transaction_cost_bps: float = 10.0
+    walk_forward: WalkForwardConfig = Field(default_factory=WalkForwardConfig)
+
+
+class RobustnessConfig(BaseModel):
+    enabled: bool = True
+    cost_sensitivity_bps: list[float] = Field(default_factory=lambda: [5, 10, 25, 50])
+    top_n_values: list[int] = Field(default_factory=lambda: [30, 50, 100])
+    rebalance_day_shifts: list[int] = Field(default_factory=lambda: [-5, 0, 5])
+    parallel_workers: int = Field(default=2, ge=1, le=4)
+
+
+class ResearchValidationConfig(BaseModel):
+    bootstrap_block_days: int = Field(default=21, ge=2)
+    bootstrap_samples: int = Field(default=2000, ge=100)
+    bootstrap_seed: int = 42
+    confidence_level: float = Field(default=0.95, gt=0.5, lt=1.0)
+    deflated_sharpe_probability: float = Field(default=0.95, gt=0.5, lt=1.0)
+    fdr_alpha: float = Field(default=0.05, gt=0.0, lt=1.0)
+    style_factor_cache: str = "data/raw/fama_french"
+    require_style_regression: bool = True
+
+
+class RegistryConfig(BaseModel):
+    enabled: bool = True
+    path: str = "experiments/registry.duckdb"
+
+
+class ApprovalConfig(BaseModel):
+    enabled: bool = True
+    directory: str = "reports/approvals"
+    require_human_approval: bool = True
+
+
+class TextFactorsConfig(BaseModel):
+    enabled: bool = False
+    cache_directory: str = "data/raw/sec_text"
+    lookback_days: int = 365
+    filing_types: list[str] = Field(
+        default_factory=lambda: ["10-K", "10-K/A", "10-Q", "10-Q/A", "8-K"]
+    )
+    risk_terms: list[str] = Field(
+        default_factory=lambda: [
+            "material weakness",
+            "going concern",
+            "litigation",
+            "cybersecurity",
+            "restatement",
+            "default",
+        ]
+    )
+
+
+class OperationsConfig(BaseModel):
+    scheduler: Literal["documented_job_runner", "prefect"] = "documented_job_runner"
+    owner: str = "research-operations"
+
+
+class QuickstartConfig(BaseModel):
+    universe_source: Literal["sp500", "seed", "nasdaq_current"] = "sp500"
+    target_symbols: int = 500
+    max_symbols: int = 1000
+    prefer_seed_symbols: bool = True
+
+
 class AppConfig(BaseModel):
     model_config = ConfigDict(extra="allow")
 
@@ -268,3 +364,14 @@ class AppConfig(BaseModel):
     risk_limits: RiskLimitsConfig
     macro: MacroConfig
     backtest: BacktestConfig
+    labels: LabelsConfig = Field(default_factory=LabelsConfig)
+    ml: MLConfig = Field(default_factory=MLConfig)
+    robustness: RobustnessConfig = Field(default_factory=RobustnessConfig)
+    research_validation: ResearchValidationConfig = Field(
+        default_factory=ResearchValidationConfig
+    )
+    registry: RegistryConfig = Field(default_factory=RegistryConfig)
+    approval: ApprovalConfig = Field(default_factory=ApprovalConfig)
+    text_factors: TextFactorsConfig = Field(default_factory=TextFactorsConfig)
+    operations: OperationsConfig = Field(default_factory=OperationsConfig)
+    quickstart: QuickstartConfig = Field(default_factory=QuickstartConfig)

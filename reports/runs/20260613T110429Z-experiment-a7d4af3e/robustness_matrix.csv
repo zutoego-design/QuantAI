@@ -1,0 +1,8 @@
+test,setting,run_id,cagr,sharpe_ratio,max_drawdown,status,error
+base,configured,20260613T110430Z-backtest-9479583b,0.209455905328932,1.1341951611821497,-0.33603106637487545,,
+subperiod,first_half,20260613T110944Z-backtest-d3d61cf0,0.20081241976340003,1.0364627134163265,-0.33603106637487545,,
+subperiod,second_half,20260613T111208Z-backtest-62ce2e81,0.23640488119850378,1.3064869994788775,-0.25483025990347163,,
+top_n_sensitivity,30,20260613T111509Z-backtest-782c0676,0.209455905328932,1.1341951611821497,-0.33603106637487545,,
+top_n_sensitivity,100,,,,,skipped,Optimizer fallback is not publishable on 2016-01-29: Optimizer produced 43 holdings; minimum acceptable is 50.
+rebalance_day_shift,-5,,,,,skipped,No point-in-time universe snapshot exists on or before 2016-01-22.
+rebalance_day_shift,5,20260613T112058Z-backtest-07dd2cae,0.21413078391596296,1.094155891651415,-0.3492609631039729,,

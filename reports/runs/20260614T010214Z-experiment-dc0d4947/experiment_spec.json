@@ -1,0 +1,65 @@
+{
+  "hypothesis": "The preregistered multifactor rule score has positive out-of-sample risk-adjusted value.",
+  "universe": "sp500_historical_standard",
+  "factors": [
+    "accruals",
+    "beta_to_spy",
+    "book_to_market",
+    "earnings_yield",
+    "free_cash_flow_yield",
+    "max_drawdown_252d",
+    "momentum_12_1",
+    "momentum_3m",
+    "momentum_6m",
+    "realized_vol_252d",
+    "realized_vol_60d",
+    "roe",
+    "sales_yield"
+  ],
+  "preprocessing": {},
+  "portfolio": {
+    "target_num_holdings": 50,
+    "max_weight": 0.05,
+    "max_sector_weight": 0.25,
+    "max_turnover_per_rebalance": 0.3
+  },
+  "costs": {
+    "commission_bps": 1.0,
+    "slippage_bps": 5.0,
+    "market_impact_coefficient": 0.1,
+    "max_adv_participation": 0.1
+  },
+  "model": {
+    "enabled": false
+  },
+  "robustness_tests": [],
+  "start_date": "2024-01-02",
+  "end_date": "2025-12-31",
+  "seed": 42,
+  "max_years": 20,
+  "study_id": "multifactor-rule-confirmatory-v1",
+  "research_stage": "confirmatory",
+  "development_start": "2024-01-02",
+  "development_end": "2024-06-28",
+  "holdout_start": "2024-08-01",
+  "holdout_end": "2025-12-31",
+  "primary_metric": "sharpe_ratio",
+  "primary_metric_threshold": 0.0,
+  "null_hypothesis": "The holdout Sharpe ratio is not greater than zero.",
+  "trial_family": "multifactor-rule-confirmatory",
+  "factor_directions": {
+    "accruals": -1,
+    "beta_to_spy": -1,
+    "book_to_market": 1,
+    "earnings_yield": 1,
+    "free_cash_flow_yield": 1,
+    "max_drawdown_252d": -1,
+    "momentum_12_1": 1,
+    "momentum_3m": 1,
+    "momentum_6m": 1,
+    "realized_vol_252d": -1,
+    "realized_vol_60d": -1,
+    "roe": 1,
+    "sales_yield": 1
+  }
+}

@@ -1,0 +1,17 @@
+{
+  "enabled": true,
+  "model_type": "ridge",
+  "target": "cross_sectional_rank",
+  "parameters": {},
+  "portfolio_top_n": 50,
+  "transaction_cost_bps": 10.0,
+  "walk_forward": {
+    "train_periods": 18,
+    "test_periods": 3,
+    "step_periods": 3,
+    "min_train_periods": 12,
+    "rolling": false,
+    "purge": true,
+    "embargo_days": 5
+  }
+}

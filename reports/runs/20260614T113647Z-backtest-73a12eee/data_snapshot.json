@@ -1,0 +1,31 @@
+{
+  "snapshot_id": "d3d982b31c63aecc03962854e979de95a6cfe4d6e215e6cc0f27c04f005d0290",
+  "algorithm": "sha256",
+  "files": [
+    {
+      "path": "data/silver/events/sec_filings.parquet",
+      "size": 59339734,
+      "sha256": "1ceee733e42ac6bcfbe13d1b5810672e55ad4a4ce617c533ff182a895414ec17"
+    },
+    {
+      "path": "data/silver/fundamentals/fundamental_observations.parquet",
+      "size": 10027137,
+      "sha256": "b1988e9fe64f3dbb09f304747d9744a9eefcaa150709461258ec6f56502afaff"
+    },
+    {
+      "path": "data/silver/prices/prices_daily.parquet",
+      "size": 60914873,
+      "sha256": "4c3f473a528543272795f9e6ec99428b67c79429c1a86b3fcf43a2e58172a433"
+    },
+    {
+      "path": "data/silver/universe/security_master.parquet",
+      "size": 60735,
+      "sha256": "bd5ba14e5eb981e4dd7c6c7447e1f99e0f5e17cfee07459b5a8ce7c477785bfa"
+    },
+    {
+      "path": "data/silver/universe/universe_membership.parquet",
+      "size": 68408,
+      "sha256": "fbc26b7d03166ccb68eaebb66a9ed2d9ce7f45794b4da0fd643997216aaf0b35"
+    }
+  ]
+}

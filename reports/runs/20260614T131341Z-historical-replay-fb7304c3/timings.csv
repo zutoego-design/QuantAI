@@ -1,0 +1,13 @@
+candidate_id,stage,elapsed_seconds,status,parallel_workers,error
+v1_control,source_backtest,119.36740859999554,valid,,
+v1_control,development_diagnostics,15.934967000037432,valid,,
+v1_control,annual_folds,51.98068889998831,valid,2.0,
+v1_drawdown_fixed,source_backtest,112.75660520000383,valid,,
+v1_drawdown_fixed,development_diagnostics,18.12890900002094,valid,,
+v1_drawdown_fixed,annual_folds,53.32775600004243,valid,2.0,
+v2_core,source_backtest,91.8433473999612,valid,,
+v2_core,development_diagnostics,5.460576299985405,valid,,
+v2_core,annual_folds,40.68890870001633,valid,2.0,
+v2_core_defensive,candidate_total,90.55056820000755,invalid,,Realized turnover 21.33% on 2024-03-01 exceeds 20.00%.
+v1_drawdown_fixed,robustness_matrix,316.83837150002364,valid,,
+v2_core,robustness_matrix,86.97212990000844,valid,,

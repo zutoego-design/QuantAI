@@ -21,6 +21,8 @@ def render_rebalance_report(
         <p>Universe size: {universe_size}</p>
         <p>Optimizer status: {optimizer_status}</p>
         <p>Warning: {warning or 'None'}</p>
+        <p>Approval status: review_required</p>
+        <p>Candidate weights are not publishable until human approval.</p>
         <p>Turnover: {turnover:.4f}</p>
         <h2>Target Weights</h2>
         {portfolio.to_html(index=False)}

@@ -26,7 +26,7 @@ runtime:
   allow_synthetic: false
 
 backtest:
-  start_date: "2015-01-01"
+  start_date: "2016-01-01"
   end_date: null
   initial_capital: 1000000
   rebalance_frequency: "monthly"
@@ -40,5 +40,72 @@ backtest:
     - 0.0
     - -0.30
     - -1.0
-  primary_benchmark: "^IXIC"
-  secondary_benchmark: "QQQ"
+  primary_benchmark: "^GSPC"
+  secondary_benchmark: "SPY"
+
+labels:
+  enabled: true
+  label_types:
+    - forward_return
+    - cross_sectional_rank
+  horizon_days: 21
+  start_offset_days: 0
+  embargo_days: 5
+  version: "v1"
+
+ml:
+  enabled: false
+  model_type: "ridge"
+  target: "cross_sectional_rank"
+  parameters: {}
+  portfolio_top_n: 50
+  transaction_cost_bps: 10.0
+  walk_forward:
+    train_periods: 24
+    test_periods: 3
+    step_periods: 3
+    min_train_periods: 12
+    rolling: false
+    purge: true
+    embargo_days: 5
+
+robustness:
+  enabled: true
+  cost_sensitivity_bps: [5, 10, 25, 50]
+  top_n_values: [30, 50, 100]
+  rebalance_day_shifts: [-5, 0, 5]
+  parallel_workers: 2
+
+research_validation:
+  bootstrap_block_days: 21
+  bootstrap_samples: 2000
+  bootstrap_seed: 42
+  confidence_level: 0.95
+  deflated_sharpe_probability: 0.95
+  fdr_alpha: 0.05
+  style_factor_cache: "data/raw/fama_french"
+  require_style_regression: true
+
+registry:
+  enabled: true
+  path: "experiments/registry.duckdb"
+
+approval:
+  enabled: true
+  directory: "reports/approvals"
+  require_human_approval: true
+
+text_factors:
+  enabled: false
+  cache_directory: "data/raw/sec_text"
+  lookback_days: 365
+  filing_types:
+    - "10-K"
+    - "10-K/A"
+    - "10-Q"
+    - "10-Q/A"
+    - "8-K"
+
+operations:
+  scheduler: "documented_job_runner"
+  owner: "research-operations"

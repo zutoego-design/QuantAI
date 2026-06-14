@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import html
 import importlib.util
 import json
 import shutil
@@ -21,9 +22,23 @@ if str(SRC) not in sys.path:
 import pandas as pd
 import plotly.express as px
 import streamlit as st
+import streamlit.components.v1 as components
 import yaml
 
 from qss.config.loader import get_config
+from qss.data.autopilot import (
+    autopilot_is_active,
+    autopilot_log_path,
+    read_autopilot_state,
+    start_autopilot_process,
+)
+from qss.data.status import research_data_status
+from qss.data.validation import required_research_credentials
+from qss.progress import parse_progress_line
+from qss.reporting.comprehensive_report import (
+    ComprehensiveReportBundle,
+    ensure_comprehensive_report,
+)
 
 st.set_page_config(
     page_title="QSS Control Deck",
@@ -40,6 +55,7 @@ SILVER = DATA / "silver"
 GOLD = DATA / "gold"
 CONFIGS = ROOT / "configs"
 DEFAULT_CONFIG_PATH = "configs/default.yaml"
+QUICKSTART_CONFIG_PATH = "configs/quickstart.yaml"
 
 DEFAULT_CONFIG_FILE = CONFIGS / "default.yaml"
 STRATEGY_CONFIG_FILE = CONFIGS / "strategy_multifactor_balanced.yaml"
@@ -494,6 +510,25 @@ def _apply_style() -> None:
             overflow-wrap: anywhere;
         }
 
+        .run-progress-meta {
+            display: flex;
+            align-items: baseline;
+            justify-content: space-between;
+            gap: 1rem;
+            margin: 0.15rem 0 0.9rem;
+            color: var(--muted);
+            font-size: 0.88rem;
+        }
+
+        .run-progress-stage {
+            color: var(--navy);
+            font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
+            font-size: 0.76rem;
+            font-weight: 700;
+            letter-spacing: 0.09em;
+            text-transform: uppercase;
+        }
+
         @media (max-width: 900px) {
             .block-container {
                 padding-left: 1rem;
@@ -517,13 +552,19 @@ def _apply_style() -> None:
 def _safe_parquet(path: Path) -> pd.DataFrame:
     if not path.exists():
         return pd.DataFrame()
-    return pd.read_parquet(path)
+    try:
+        return pd.read_parquet(path)
+    except (OSError, ValueError):
+        return pd.DataFrame()
 
 
 def _safe_csv(path: Path) -> pd.DataFrame:
     if not path.exists():
         return pd.DataFrame()
-    return pd.read_csv(path)
+    try:
+        return pd.read_csv(path)
+    except (OSError, pd.errors.EmptyDataError, pd.errors.ParserError):
+        return pd.DataFrame()
 
 
 def _fmt_pct(value: float | int | None) -> str:
@@ -625,13 +666,30 @@ def _load_artifacts() -> dict[str, Any]:
         key=lambda path: path.stat().st_mtime,
     )
 
-    latest_run_file = REPORTS / "latest_run.json"
     latest_run_root = None
-    if latest_run_file.exists():
+    comprehensive_pointer = REPORTS / "comprehensive" / "latest.json"
+    if comprehensive_pointer.exists():
         try:
-            latest_run_root = Path(json.loads(latest_run_file.read_text(encoding="utf-8"))["path"])
+            pointer = json.loads(comprehensive_pointer.read_text(encoding="utf-8"))
+            source_root = Path(pointer["source_run_path"])
+            structured = json.loads(Path(pointer["structured_report"]).read_text(encoding="utf-8"))
+            if structured.get("run_type") == "experiment":
+                model = structured.get("decision", {}).get("selected_model", "rule_score")
+                candidate = source_root / "holdout_evaluation" / str(model)
+                latest_run_root = candidate if candidate.exists() else source_root
+            else:
+                latest_run_root = source_root
         except (KeyError, ValueError, OSError):
             latest_run_root = None
+    if latest_run_root is None:
+        latest_run_file = REPORTS / "latest_run.json"
+        if latest_run_file.exists():
+            try:
+                latest_run_root = Path(
+                    json.loads(latest_run_file.read_text(encoding="utf-8"))["path"]
+                )
+            except (KeyError, ValueError, OSError):
+                latest_run_root = None
     backtest_daily = (
         _safe_csv(latest_run_root / "daily_returns.csv")
         if latest_run_root
@@ -720,6 +778,7 @@ def _latest_report_dates(artifacts: dict[str, Any]) -> dict[str, date]:
 
 def _init_state(artifacts: dict[str, Any]) -> None:
     config_obj, _ = _try_load_config(st.session_state.get("config_path", DEFAULT_CONFIG_PATH))
+    quickstart_obj, _ = _try_load_config(QUICKSTART_CONFIG_PATH)
     defaults = _latest_report_dates(artifacts)
     today = pd.Timestamp.today().date()
 
@@ -731,20 +790,40 @@ def _init_state(artifacts: dict[str, Any]) -> None:
         st.session_state["risk_date"] = defaults["risk_date"]
     if "price_start_date" not in st.session_state:
         if config_obj is not None:
-            st.session_state["price_start_date"] = _to_date(config_obj.backtest.start_date, today)
+            st.session_state["price_start_date"] = _to_date(
+                pd.Timestamp(config_obj.backtest.start_date)
+                - pd.DateOffset(years=2),
+                today,
+            )
         else:
-            st.session_state["price_start_date"] = date(2015, 1, 1)
+            st.session_state["price_start_date"] = date(2014, 1, 1)
     if "backtest_start_date" not in st.session_state:
         if config_obj is not None:
             st.session_state["backtest_start_date"] = _to_date(config_obj.backtest.start_date, today)
         else:
-            st.session_state["backtest_start_date"] = date(2015, 1, 1)
+            st.session_state["backtest_start_date"] = date(2016, 1, 1)
     if "backtest_end_date" not in st.session_state:
         st.session_state["backtest_end_date"] = defaults["backtest_end"]
+    if "quickstart_start_date" not in st.session_state:
+        if quickstart_obj is not None:
+            st.session_state["quickstart_start_date"] = _to_date(
+                quickstart_obj.backtest.start_date,
+                date(2023, 1, 1),
+            )
+        else:
+            st.session_state["quickstart_start_date"] = date(2023, 1, 1)
+    if "quickstart_end_date" not in st.session_state:
+        st.session_state["quickstart_end_date"] = today
+    if "quickstart_target_symbols" not in st.session_state:
+        st.session_state["quickstart_target_symbols"] = (
+            int(quickstart_obj.quickstart.target_symbols)
+            if quickstart_obj is not None
+            else 500
+        )
     if "run_history" not in st.session_state:
         st.session_state["run_history"] = []
     if "page" not in st.session_state:
-        st.session_state["page"] = "Command Deck"
+        st.session_state["page"] = "Research Brief"
 
 
 def _remember_run(label: str, command: list[str], returncode: int, duration: float, output: str) -> None:
@@ -769,6 +848,176 @@ def _missing_cli_modules() -> list[str]:
     ]
 
 
+def _configured_path(path_value: str) -> Path:
+    path = Path(path_value)
+    return path if path.is_absolute() else ROOT / path
+
+
+def _research_readiness(
+    config_obj: Any | None,
+    start_date: str | date | None = None,
+    end_date: str | date | None = None,
+) -> tuple[list[str], list[str]]:
+    if config_obj is None:
+        return ["valid configuration"], []
+    status = research_data_status(config_obj, start_date, end_date)
+    missing_artifacts = status.checks.loc[
+        (status.checks["component"] != "Provider credentials")
+        & (status.checks["status"] != "ready"),
+        "component",
+    ].tolist()
+    missing_credentials = [
+        name
+        for name, present in required_research_credentials(config_obj).items()
+        if not present
+    ]
+    return missing_artifacts, missing_credentials
+
+
+def _render_research_readiness(
+    config_obj: Any | None,
+    start_date: str | date | None = None,
+    end_date: str | date | None = None,
+) -> bool:
+    missing_artifacts, missing_credentials = _research_readiness(
+        config_obj,
+        start_date,
+        end_date,
+    )
+    if config_obj is not None:
+        status = research_data_status(config_obj, start_date, end_date)
+        st.markdown("#### Research Data Foundation")
+        st.dataframe(
+            status.checks,
+            use_container_width=True,
+            hide_index=True,
+        )
+    if not missing_artifacts and not missing_credentials:
+        st.success("Research prerequisites are present. The strict data-quality gate will run next.")
+        return True
+
+    details = []
+    if missing_artifacts:
+        details.append(f"missing artifacts: {', '.join(missing_artifacts)}")
+    if missing_credentials:
+        details.append(f"missing environment settings: {', '.join(missing_credentials)}")
+    st.warning(
+        "Backtest data preparation is not complete yet. "
+        + " | ".join(details)
+    )
+    st.caption(
+        "The standard path now prepares S&P 500 point-in-time membership, live "
+        "prices, SEC fundamentals, and FRED macro data. No synthetic data is "
+        "allowed in strict research mode."
+    )
+    return False
+
+
+def _render_autopilot(config_obj: Any | None, research_ready: bool) -> None:
+    st.markdown("#### S&P 500 Research Runner")
+    st.caption(
+        "One run prepares the standard S&P 500 data foundation, validates that "
+        "synthetic rows are zero, and then runs the strict backtest."
+    )
+    if config_obj is None:
+        st.error("Load a valid configuration before starting Autopilot.")
+        return
+
+    state = read_autopilot_state(config_obj)
+    active = autopilot_is_active(config_obj)
+    recoverable = (
+        state.status in {"starting", "running", "waiting"}
+        and not active
+        and bool(state.start_date)
+        and bool(state.end_date)
+    )
+    if recoverable:
+        state = start_autopilot_process(
+            config_obj,
+            [st.session_state["config_path"]],
+            str(state.start_date),
+            str(state.end_date),
+            run_backtest_when_ready=state.run_backtest,
+        )
+        active = autopilot_is_active(config_obj)
+        st.info("Recovered the interrupted Autopilot worker from its saved state.")
+    tone = {
+        "completed": "success",
+        "blocked": "warning",
+        "failed": "error",
+        "stopped": "warning",
+    }.get(state.status, "info")
+    st.markdown(
+        _status_pill(f"{state.status}: {state.stage}", tone),
+        unsafe_allow_html=True,
+    )
+    st.write(state.message)
+    if state.progress:
+        st.caption(state.progress)
+    if state.next_resume_at:
+        st.info(f"Next automatic resume: {state.next_resume_at} (UTC)")
+    if state.pid and active:
+        st.caption(f"Background worker PID: {state.pid}")
+
+    actions = st.columns(3)
+    if actions[0].button(
+        "Run S&P 500 Data + Backtest",
+        type="primary",
+        use_container_width=True,
+        disabled=active,
+    ):
+        _run_cli_task(
+            "S&P 500 Research Backtest",
+            [
+                "autopilot-start",
+                "--config",
+                st.session_state["config_path"],
+                "--start",
+                str(st.session_state["backtest_start_date"]),
+                "--end",
+                str(st.session_state["backtest_end_date"]),
+                "--run-backtest",
+            ],
+        )
+    if actions[1].button(
+        "Stop Autopilot",
+        use_container_width=True,
+        disabled=not active,
+    ):
+        _run_cli_task(
+            "Stop Research Autopilot",
+            [
+                "autopilot-stop",
+                "--config",
+                st.session_state["config_path"],
+            ],
+        )
+    if actions[2].button(
+        "Refresh Status",
+        use_container_width=True,
+    ):
+        st.cache_data.clear()
+        st.rerun()
+
+    log_path = autopilot_log_path(config_obj)
+    if log_path.exists():
+        with st.expander("Autopilot log", expanded=False):
+            lines = log_path.read_text(encoding="utf-8", errors="replace").splitlines()
+            st.code("\n".join(lines[-160:]), language="bash")
+
+
+def _quickstart_cli_args() -> list[str]:
+    return [
+        "quickstart",
+        "--start",
+        str(st.session_state.get("quickstart_start_date", date(2023, 1, 1))),
+        "--end",
+        str(st.session_state.get("quickstart_end_date", pd.Timestamp.today().date())),
+        "--target-symbols",
+        str(int(st.session_state.get("quickstart_target_symbols", 500))),
+    ]
+
+
 def _run_cli_task(label: str, cli_args: list[str]) -> None:
     command = [sys.executable, "-m", "qss.cli", *cli_args]
     missing = _missing_cli_modules()
@@ -787,8 +1036,20 @@ def _run_cli_task(label: str, cli_args: list[str]) -> None:
     started = time.perf_counter()
     status = st.status(f"Running {label}", expanded=True)
     status.write(f"Command: {' '.join(command)}")
+    progress_bar = st.progress(0, text="Preparing task")
+    progress_meta = st.empty()
+    progress_meta.markdown(
+        """
+        <div class="run-progress-meta">
+          <span class="run-progress-stage">starting</span>
+          <span>0% · 0.0s elapsed</span>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
 
     returncode = 1
+    latest_progress = 0
     try:
         process = subprocess.Popen(
             command,
@@ -803,6 +1064,29 @@ def _run_cli_task(label: str, cli_args: list[str]) -> None:
         assert process.stdout is not None
         for line in process.stdout:
             clean = line.rstrip()
+            progress_event = parse_progress_line(clean)
+            if progress_event is not None:
+                event_progress = int(round(progress_event["progress"] * 100))
+                if progress_event["stage"] != "failed":
+                    latest_progress = event_progress
+                elapsed = time.perf_counter() - started
+                stage = html.escape(progress_event["stage"])
+                progress_bar.progress(latest_progress, text=progress_event["message"])
+                progress_meta.markdown(
+                    f"""
+                    <div class="run-progress-meta">
+                      <span class="run-progress-stage">{stage}</span>
+                      <span>{latest_progress}% · {elapsed:.1f}s elapsed</span>
+                    </div>
+                    """,
+                    unsafe_allow_html=True,
+                )
+                status.update(
+                    label=f"{label} · {progress_event['message']}",
+                    state="running",
+                    expanded=True,
+                )
+                continue
             output_lines.append(clean)
             log_box.code("\n".join(output_lines), language="bash")
         returncode = process.wait()
@@ -814,9 +1098,20 @@ def _run_cli_task(label: str, cli_args: list[str]) -> None:
     output = "\n".join(output_lines)
     _remember_run(label, command, returncode, duration, output)
     if returncode == 0:
+        progress_bar.progress(100, text="Complete")
+        progress_meta.markdown(
+            f"""
+            <div class="run-progress-meta">
+              <span class="run-progress-stage">complete</span>
+              <span>100% · {duration:.1f}s elapsed</span>
+            </div>
+            """,
+            unsafe_allow_html=True,
+        )
         status.update(label=f"{label} completed in {duration:.1f}s", state="complete", expanded=False)
         st.success(f"{label} completed.")
     else:
+        progress_bar.progress(latest_progress, text="Task failed")
         status.update(label=f"{label} failed after {duration:.1f}s", state="error", expanded=True)
         st.error(f"{label} failed. See log tail below.")
     st.cache_data.clear()
@@ -889,6 +1184,9 @@ def _save_parameter_updates() -> None:
     risk_cfg["risk_limits"]["portfolio"]["max_tracking_error"] = float(st.session_state["cfg_risk_tracking_error"])
 
     universe_cfg.setdefault("universe", {})
+    universe_cfg["universe"]["start_date"] = str(
+        st.session_state["cfg_backtest_start"]
+    )
     universe_cfg["universe"].setdefault("filters", {})
     universe_cfg["universe"].setdefault("exclude", {})
     universe_cfg["universe"]["filters"]["min_market_cap"] = float(st.session_state["cfg_min_market_cap"])
@@ -981,7 +1279,10 @@ def _render_overview(artifacts: dict[str, Any]) -> None:
     latest_backtest = backtest_daily.tail(1)
     latest_portfolio_date = portfolio["date"].max() if not portfolio.empty else None
     if {"metric", "value"}.issubset(backtest_metrics.columns):
-        annual_return = backtest_metrics.loc[backtest_metrics["metric"] == "annualized_return", "value"]
+        annual_return = backtest_metrics.loc[
+            backtest_metrics["metric"].isin(["annualized_return", "cagr"]),
+            "value",
+        ]
         sharpe = backtest_metrics.loc[backtest_metrics["metric"] == "sharpe_ratio", "value"]
         max_dd = backtest_metrics.loc[backtest_metrics["metric"] == "max_drawdown", "value"]
     else:
@@ -1050,8 +1351,57 @@ def _render_overview(artifacts: dict[str, Any]) -> None:
         st.dataframe(freshness[["artifact", "updated", "size"]], use_container_width=True, hide_index=True)
 
 
-def _render_command_deck() -> None:
-    _panel_header("Run Controls", "Adjust runtime dates here, then launch the exact CLI task you want. Long-running jobs stream their log tail into the page.")
+def _render_command_deck(config_obj: Any | None) -> None:
+    _panel_header(
+        "Run Controls",
+        "The default path is now a strict S&P 500 point-in-time backtest with real data only.",
+    )
+    with st.container(border=True):
+        st.markdown("#### Recommended: S&P 500 Strict Research Backtest")
+        st.caption(
+            "Uses reconstructed S&P 500 membership, live Yahoo/Stooq prices, SEC "
+            "fundamentals, and FRED macro data. Synthetic prices, fundamentals, "
+            "and macro rows are rejected."
+        )
+        research_cols = st.columns(2)
+        research_cols[0].date_input("Research start", key="backtest_start_date")
+        research_cols[1].date_input("Research end", key="backtest_end_date")
+        research_ready = _render_research_readiness(
+            config_obj,
+            st.session_state["backtest_start_date"],
+            st.session_state["backtest_end_date"],
+        )
+        _render_autopilot(config_obj, research_ready)
+
+    with st.expander("Optional smoke test: Quickstart uses simulated fundamentals", expanded=False):
+        st.caption(
+            "Quickstart is only for UI/system smoke testing. It is not a trusted "
+            "research run because fundamentals and macro data are deterministic fallback data."
+        )
+        quick_cols = st.columns(3)
+        quick_cols[0].date_input("Quickstart start", key="quickstart_start_date")
+        quick_cols[1].date_input("Quickstart end", key="quickstart_end_date")
+        quick_cols[2].number_input(
+            "Universe size",
+            min_value=100,
+            max_value=1000,
+            step=50,
+            key="quickstart_target_symbols",
+        )
+        if st.button(
+            "Run Quickstart Smoke Test",
+            use_container_width=True,
+            key="quickstart_backtest_command_deck",
+        ):
+            _run_cli_task("Quickstart Smoke Test", _quickstart_cli_args())
+
+    missing_artifacts, missing_credentials = _research_readiness(
+        config_obj,
+        st.session_state["backtest_start_date"],
+        st.session_state["backtest_end_date"],
+    )
+    research_ready = not missing_artifacts and not missing_credentials
+    pipeline_disabled = config_obj is None or bool(missing_credentials)
     controls_left, controls_right = st.columns([1.1, 1.1], gap="large")
 
     with controls_left:
@@ -1059,8 +1409,12 @@ def _render_command_deck() -> None:
             st.markdown("#### Monthly Pipeline")
             st.caption("Refresh data, rebuild the research stack, and publish the latest portfolio artifacts.")
             st.date_input("Pipeline date", key="pipeline_date")
-            st.date_input("Price ingestion start", key="price_start_date")
-            if st.button("Run Monthly Pipeline", type="primary", use_container_width=True):
+            if st.button(
+                "Run Monthly Pipeline",
+                type="primary",
+                use_container_width=True,
+                disabled=pipeline_disabled,
+            ):
                 _run_cli_task(
                     "Monthly Pipeline",
                     [
@@ -1070,17 +1424,77 @@ def _render_command_deck() -> None:
                         "--date",
                         str(st.session_state["pipeline_date"]),
                         "--start",
-                        str(st.session_state["price_start_date"]),
+                        str(st.session_state["backtest_start_date"]),
                     ],
                 )
 
-        with st.container(border=True):
-            st.markdown("#### Ingestion Only")
-            st.caption("Refresh one source family without running downstream research stages.")
-            ingest_cols = st.columns(3)
-            if ingest_cols[0].button("Prices", use_container_width=True):
+        with st.expander("Advanced manual data controls", expanded=False):
+            st.markdown("#### Individual ingestion stages")
+            st.caption(
+                "Normally Autopilot manages these. Use them only for diagnostics."
+            )
+            st.date_input(
+                "Manual price ingestion start",
+                key="price_start_date",
+                help="Only affects the manual price command; strict research uses Research start.",
+            )
+            ingest_cols = st.columns(4)
+            missing_credentials = set(
+                _research_readiness(
+                    config_obj,
+                    st.session_state["backtest_start_date"],
+                    st.session_state["pipeline_date"],
+                )[1]
+            )
+            data_status = (
+                research_data_status(
+                    config_obj,
+                    st.session_state["backtest_start_date"],
+                    st.session_state["pipeline_date"],
+                )
+                if config_obj is not None
+                else None
+            )
+            universe_ready = bool(
+                data_status is not None
+                and (
+                    data_status.checks.loc[
+                        data_status.checks["component"].isin(
+                            ["Universe history", "Current universe baseline"]
+                        ),
+                        "status",
+                    ]
+                    == "ready"
+                ).any()
+            )
+            if ingest_cols[0].button(
+                "Universe Sync",
+                use_container_width=True,
+                disabled=config_obj is None
+                or bool(
+                    {"ALPHAVANTAGE_API_KEY", "MASSIVE_API_KEY"} & missing_credentials
+                ),
+            ):
                 _run_cli_task(
-                    "Ingest Prices",
+                    "Universe Sync",
+                    [
+                        "sync-universe",
+                        "--config",
+                        st.session_state["config_path"],
+                        "--start",
+                        str(st.session_state["backtest_start_date"]),
+                        "--end",
+                        str(st.session_state["pipeline_date"]),
+                    ],
+                )
+            if ingest_cols[1].button(
+                "Research Prices",
+                use_container_width=True,
+                disabled=not universe_ready,
+                help="Strict research data import. Quickstart Backtest manages its own data.",
+            ):
+                _run_cli_task(
+                    "Ingest Research Prices",
                     [
                         "ingest-prices",
                         "--config",
@@ -1089,18 +1503,29 @@ def _render_command_deck() -> None:
                         str(st.session_state["price_start_date"]),
                     ],
                 )
-            if ingest_cols[1].button("Fundamentals", use_container_width=True):
+            if ingest_cols[2].button(
+                "Fundamentals",
+                use_container_width=True,
+                disabled=not universe_ready
+                or "SEC_USER_AGENT" in missing_credentials,
+            ):
                 _run_cli_task("Ingest Fundamentals", ["ingest-fundamentals", "--config", st.session_state["config_path"]])
-            if ingest_cols[2].button("Macro", use_container_width=True):
+            if ingest_cols[3].button(
+                "Macro",
+                use_container_width=True,
+                help="Uses the FRED API when configured, with public graph CSV fallback.",
+            ):
                 _run_cli_task("Ingest Macro", ["ingest-macro", "--config", st.session_state["config_path"]])
 
     with controls_right:
         with st.container(border=True):
-            st.markdown("#### Backtest")
-            st.caption("Rebuild performance, benchmark, drawdown, and transaction-cost reports.")
-            st.date_input("Backtest start", key="backtest_start_date")
-            st.date_input("Backtest end", key="backtest_end_date")
-            if st.button("Run Backtest", type="primary", use_container_width=True):
+            st.markdown("#### Strict Research Backtest")
+            st.caption("Runs only after the S&P 500 real-data foundation passes validation.")
+            if st.button(
+                "Run Strict Backtest",
+                use_container_width=True,
+                disabled=not research_ready,
+            ):
                 _run_cli_task(
                     "Backtest",
                     [
@@ -1155,7 +1580,10 @@ def _render_configuration(config_obj: Any | None) -> None:
         st.warning("The built-in editor only writes to configs/default.yaml and its included YAML files. Switch the config entrypoint back to configs/default.yaml to enable Save Configuration.")
 
     if "cfg_backtest_start" not in st.session_state:
-        st.session_state["cfg_backtest_start"] = _to_date(config_obj.backtest.start_date, date(2015, 1, 1))
+        st.session_state["cfg_backtest_start"] = _to_date(
+            config_obj.backtest.start_date,
+            date(2016, 1, 1),
+        )
         st.session_state["cfg_initial_capital"] = float(config_obj.backtest.initial_capital)
         st.session_state["cfg_exec_lag"] = int(config_obj.backtest.rebalance_execution_lag_days)
         st.session_state["cfg_commission_bps"] = float(config_obj.backtest.transaction_cost.commission_bps)
@@ -1377,15 +1805,29 @@ def _render_portfolio(artifacts: dict[str, Any]) -> None:
         st.dataframe(trades.sort_values("trade_weight", ascending=False), use_container_width=True, hide_index=True)
 
 
-def _render_backtest(artifacts: dict[str, Any]) -> None:
+def _render_backtest(artifacts: dict[str, Any], config_obj: Any | None) -> None:
     backtest_daily = artifacts["backtest_daily"]
     backtest_metrics = artifacts["backtest_metrics"]
     control, summary = st.columns([0.9, 1.35], gap="large")
     with control:
-        _panel_header("Backtest Run", "Adjust the historical window here and run a fresh backtest without leaving the UI.")
-        st.date_input("Backtest start", key="backtest_start_date")
-        st.date_input("Backtest end", key="backtest_end_date")
-        if st.button("Run Backtest", type="primary", use_container_width=True, key="backtest_run_button_page"):
+        _panel_header(
+            "Backtest Run",
+            "Run the standard S&P 500 strict path first; Quickstart is only a smoke test.",
+        )
+        st.date_input("Strict backtest start", key="backtest_start_date")
+        st.date_input("Strict backtest end", key="backtest_end_date")
+        research_ready = _render_research_readiness(
+            config_obj,
+            st.session_state["backtest_start_date"],
+            st.session_state["backtest_end_date"],
+        )
+        _render_autopilot(config_obj, research_ready)
+        if st.button(
+            "Run Strict Backtest Only",
+            use_container_width=True,
+            key="backtest_run_button_page",
+            disabled=not research_ready,
+        ):
             _run_cli_task(
                 "Backtest",
                 [
@@ -1398,6 +1840,24 @@ def _render_backtest(artifacts: dict[str, Any]) -> None:
                     str(st.session_state["backtest_end_date"]),
                 ],
             )
+
+        with st.expander("Optional Quickstart smoke test", expanded=False):
+            st.caption("Uses simulated fundamentals/macro; not a strict research result.")
+            st.date_input("Quickstart start", key="quickstart_start_date")
+            st.date_input("Quickstart end", key="quickstart_end_date")
+            st.number_input(
+                "Universe size",
+                min_value=100,
+                max_value=1000,
+                step=50,
+                key="quickstart_target_symbols",
+            )
+            if st.button(
+                "Run Quickstart Smoke Test",
+                use_container_width=True,
+                key="quickstart_backtest_page",
+            ):
+                _run_cli_task("Quickstart Smoke Test", _quickstart_cli_args())
         if not backtest_metrics.empty:
             st.dataframe(backtest_metrics, use_container_width=True, hide_index=True)
         else:
@@ -1505,19 +1965,71 @@ def _render_macro_data(artifacts: dict[str, Any]) -> None:
         st.dataframe(snapshot[["artifact", "updated", "size"]], use_container_width=True, hide_index=True)
 
 
+def _prepare_comprehensive_report() -> tuple[ComprehensiveReportBundle | None, str | None]:
+    try:
+        return ensure_comprehensive_report(REPORTS), None
+    except (OSError, ValueError) as exc:
+        return None, str(exc)
+
+
+def _render_research_brief(
+    bundle: ComprehensiveReportBundle | None,
+    error: str | None,
+) -> None:
+    if bundle is None:
+        _render_hero(
+            "Research Brief",
+            "The dashboard could not assemble a comprehensive report from the saved runs.",
+        )
+        st.warning(error or "No valid research result is available.")
+        return
+
+    payload = json.loads(bundle.structured_report.read_text(encoding="utf-8"))
+    controls = st.columns([1.2, 1.2, 3.6])
+    controls[0].markdown(
+        _status_pill(
+            f"artifact {payload.get('artifact_status', 'unknown')}",
+            "success" if payload.get("artifact_status") == "valid" else "error",
+        ),
+        unsafe_allow_html=True,
+    )
+    evidence = str(payload.get("evidence_status", "exploratory"))
+    controls[1].markdown(
+        _status_pill(
+            f"evidence {evidence}",
+            "success" if evidence == "supported" else "warning",
+        ),
+        unsafe_allow_html=True,
+    )
+    with controls[2]:
+        st.download_button(
+            "Download standalone HTML report",
+            data=bundle.html_report.read_bytes(),
+            file_name=f"{bundle.source_run_id}-comprehensive-report.html",
+            mime="text/html",
+            use_container_width=True,
+        )
+    st.caption(
+        f"Source: {bundle.source_run_id} | Generated report: {bundle.html_report}"
+    )
+    components.html(
+        bundle.html_report.read_text(encoding="utf-8"),
+        height=5100,
+        scrolling=True,
+    )
+
+
 def main() -> None:
     _apply_style()
+    comprehensive_bundle, comprehensive_error = _prepare_comprehensive_report()
     artifacts = _load_artifacts()
     _init_state(artifacts)
     config_obj, config_error = _try_load_config(st.session_state["config_path"])
 
     _render_sidebar(artifacts, config_error)
-    _render_hero(
-        "Research Workbench",
-        "Operate the monthly pipeline, backtest, and risk monitor from the front end, then inspect the resulting universe, factors, portfolio, and control outputs without switching surfaces.",
-    )
 
     pages = [
+        "Research Brief",
         "Command Deck",
         "Overview",
         "Configuration",
@@ -1530,8 +2042,17 @@ def main() -> None:
     ]
     page = st.radio("Navigation", pages, horizontal=True, key="page", label_visibility="collapsed")
 
+    if page == "Research Brief":
+        _render_research_brief(comprehensive_bundle, comprehensive_error)
+        return
+
+    _render_hero(
+        "Research Workbench",
+        "Operate the monthly pipeline, backtest, and risk monitor from the front end, then inspect the resulting universe, factors, portfolio, and control outputs without switching surfaces.",
+    )
+
     if page == "Command Deck":
-        _render_command_deck()
+        _render_command_deck(config_obj)
     elif page == "Overview":
         _render_overview(artifacts)
     elif page == "Configuration":
@@ -1543,7 +2064,7 @@ def main() -> None:
     elif page == "Portfolio":
         _render_portfolio(artifacts)
     elif page == "Backtest":
-        _render_backtest(artifacts)
+        _render_backtest(artifacts, config_obj)
     elif page == "Risk":
         _render_risk(artifacts)
     elif page == "Macro & Data":

@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import time
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -7,12 +8,14 @@ import pandas as pd
 
 from qss.config.schema import AppConfig
 from qss.data.storage import read_parquet, write_parquet
+from qss.logging_utils import logger
 from qss.universe.providers import (
     OPERATING_TYPES,
     AlphaVantageListingProvider,
     MassiveTickerProvider,
     NasdaqTraderProvider,
 )
+from qss.universe.sp500 import build_sp500_history
 
 
 @dataclass
@@ -22,6 +25,10 @@ class UniverseSyncResult:
     listing_intervals: pd.DataFrame
     membership: pd.DataFrame
     validation: pd.DataFrame
+    historical_months: int = 0
+    requested_months: int = 0
+    next_missing_date: str | None = None
+    warning: str | None = None
 
 
 def _month_ends(start: str, end: str) -> list[pd.Timestamp]:
@@ -109,6 +116,165 @@ def _validation_rows(
     }
 
 
+def _sync_current_snapshot(
+    config: AppConfig,
+    start: str,
+    end: str,
+) -> UniverseSyncResult:
+    requested_dates = _month_ends(start, end)
+    if not requested_dates:
+        requested_dates = [pd.Timestamp(end).normalize()]
+    current = _eligible(NasdaqTraderProvider().fetch(), config)
+    if current.empty:
+        raise RuntimeError("Nasdaq Trader returned an empty current universe.")
+
+    raw_root = Path(config.paths.raw_data) / "universe" / "nasdaq_trader"
+    write_parquet(
+        current,
+        raw_root / f"{pd.Timestamp.today():%Y-%m-%d}.parquet",
+    )
+    snapshots = []
+    for date in requested_dates:
+        snapshot = current.copy()
+        snapshot["date"] = date.to_period("M").start_time
+        snapshot["source"] = "nasdaq_trader_current_backfill"
+        snapshots.append(snapshot)
+    combined = pd.concat(snapshots, ignore_index=True)
+    membership = combined[
+        ["date", "security_id", "symbol", "security_type", "source"]
+    ].copy()
+    membership["included"] = True
+    membership["exclusion_reason"] = ""
+    master, history, intervals = _tables_from_snapshots(combined)
+
+    root = Path(config.paths.silver_data) / "universe"
+    existing_master = read_parquet(root / "security_master.parquet")
+    if not existing_master.empty and "symbol" in existing_master:
+        enrichment_columns = [
+            column
+            for column in ["symbol", "sector", "sic", "sic_description"]
+            if column in existing_master
+        ]
+        if len(enrichment_columns) > 1:
+            enrichment = existing_master[enrichment_columns].drop_duplicates("symbol")
+            master = master.merge(enrichment, on="symbol", how="left")
+
+    validation = pd.DataFrame(
+        columns=[
+            "date",
+            "internal_count",
+            "external_count",
+            "intersection_count",
+            "jaccard",
+            "missing_internal",
+            "missing_external",
+        ]
+    )
+    write_parquet(master, root / "security_master.parquet")
+    write_parquet(history, root / "symbol_history.parquet")
+    write_parquet(intervals, root / "listing_intervals.parquet")
+    write_parquet(membership, root / "universe_membership.parquet")
+    write_parquet(validation, root / "universe_validation.parquet")
+    for year, group in membership.groupby(membership["date"].dt.year):
+        write_parquet(
+            group,
+            root / "membership_by_year" / f"year={year}" / "part.parquet",
+        )
+    return UniverseSyncResult(
+        master,
+        history,
+        intervals,
+        membership,
+        validation,
+        historical_months=len(requested_dates),
+        requested_months=len(requested_dates),
+        warning=(
+            "Current Nasdaq membership was backfilled across the research window. "
+            "The resulting backtest has survivorship bias."
+        ),
+    )
+
+
+def _sync_sp500_history(
+    config: AppConfig,
+    start: str,
+    end: str,
+) -> UniverseSyncResult:
+    raw_root = Path(config.paths.raw_data) / "universe" / "sp500_wikipedia"
+    history = build_sp500_history(start, end, raw_root=raw_root)
+    root = Path(config.paths.silver_data) / "universe"
+
+    existing_master = read_parquet(root / "security_master.parquet")
+    master = history.security_master
+    if not existing_master.empty and "symbol" in existing_master:
+        enrichment_columns = [
+            column
+            for column in ["symbol", "sector", "sic", "sic_description"]
+            if column in existing_master
+        ]
+        if len(enrichment_columns) > 1:
+            enrichment = existing_master[enrichment_columns].drop_duplicates("symbol")
+            master = master.merge(enrichment, on="symbol", how="left", suffixes=("", "_old"))
+            for column in ["sector", "sic", "sic_description"]:
+                old_column = f"{column}_old"
+                if old_column in master:
+                    if column in master:
+                        master[column] = master[column].where(
+                            ~master[column].astype(str).str.lower().isin(
+                                ["", "unknown", "unclassified", "nan"]
+                            ),
+                            master[old_column],
+                        )
+                    else:
+                        master[column] = master[old_column]
+                    master = master.drop(columns=old_column)
+
+    validation = pd.DataFrame(
+        [
+            {
+                "date": pd.Timestamp(end).normalize(),
+                "internal_count": int(
+                    history.membership.loc[
+                        history.membership["date"]
+                        == history.membership["date"].max(),
+                        "symbol",
+                    ].nunique()
+                ),
+                "external_count": pd.NA,
+                "intersection_count": pd.NA,
+                "jaccard": pd.NA,
+                "missing_internal": pd.NA,
+                "missing_external": pd.NA,
+                "source": "sp500_wikipedia_single_source_audit",
+            }
+        ]
+    )
+    write_parquet(master, root / "security_master.parquet")
+    write_parquet(history.symbol_history, root / "symbol_history.parquet")
+    write_parquet(history.listing_intervals, root / "listing_intervals.parquet")
+    write_parquet(history.membership, root / "universe_membership.parquet")
+    write_parquet(validation, root / "universe_validation.parquet")
+    for year, group in history.membership.groupby(history.membership["date"].dt.year):
+        write_parquet(
+            group,
+            root / "membership_by_year" / f"year={year}" / "part.parquet",
+        )
+    months = history.membership["date"].dt.to_period("M").nunique()
+    return UniverseSyncResult(
+        master,
+        history.symbol_history,
+        history.listing_intervals,
+        history.membership,
+        validation,
+        historical_months=months,
+        requested_months=months,
+        warning=(
+            "S&P 500 membership was reconstructed from Wikipedia current "
+            "constituents and constituent-change history."
+        ),
+    )
+
+
 def sync_universe(
     config: AppConfig,
     start_date: str | None = None,
@@ -117,6 +283,10 @@ def sync_universe(
 ) -> UniverseSyncResult:
     start = start_date or config.universe.start_date
     end = end_date or str(pd.Timestamp.today().date())
+    if config.universe.membership_mode == "current_snapshot":
+        return _sync_current_snapshot(config, start, end)
+    if config.universe.long_history_provider == "sp500_wikipedia":
+        return _sync_sp500_history(config, start, end)
     alpha = AlphaVantageListingProvider()
     snapshots: list[pd.DataFrame] = []
     raw_root = Path(config.paths.raw_data) / "universe"
@@ -125,18 +295,39 @@ def sync_universe(
     request_budget = config.universe.max_remote_requests_per_sync
     alpha_requests = 0
     massive_requests = 0
-    for date in _month_ends(start, end):
+    requested_dates = _month_ends(start, end)
+    historical_dates: set[pd.Timestamp] = set()
+    next_missing_date: str | None = None
+    sync_warning: str | None = None
+    for date in requested_dates:
         cache_path = alpha_cache / f"{date:%Y-%m-%d}.parquet"
         cached = read_parquet(cache_path)
         if not cached.empty:
             snapshots.append(_eligible(cached, config))
+            historical_dates.add(date)
             continue
         if alpha_requests >= request_budget:
+            next_missing_date = str(date.date())
+            sync_warning = (
+                f"Remote request budget reached; rerun to continue from {next_missing_date}."
+            )
             break
-        fetched = _eligible(alpha.fetch(date), config)
+        try:
+            fetched = _eligible(alpha.fetch(date), config)
+        except (RuntimeError, ValueError) as exc:
+            next_missing_date = str(date.date())
+            sync_warning = (
+                f"Alpha Vantage paused at {next_missing_date}: {exc} "
+                "Cached progress was preserved; rerun later to continue."
+            )
+            logger.warning(sync_warning)
+            break
         write_parquet(fetched, cache_path)
         snapshots.append(fetched)
+        historical_dates.add(date)
         alpha_requests += 1
+        if alpha_requests < request_budget:
+            time.sleep(config.universe.remote_request_interval_seconds)
 
     existing_membership = read_parquet(
         Path(config.paths.silver_data) / "universe" / "universe_membership.parquet"
@@ -147,9 +338,12 @@ def sync_universe(
     ):
         historical = existing_membership.loc[
             existing_membership["source"].astype(str).str.contains(
-                "alpha_vantage|nasdaq_trader", regex=True
+                "alpha_vantage", regex=True
             )
         ].copy()
+        if "date" in historical:
+            historical["date"] = pd.to_datetime(historical["date"]).dt.normalize()
+            historical = historical.loc[~historical["date"].isin(historical_dates)]
         if not historical.empty:
             existing_master = read_parquet(
                 Path(config.paths.silver_data) / "universe" / "security_master.parquet"
@@ -176,7 +370,10 @@ def sync_universe(
     current = _eligible(NasdaqTraderProvider().fetch(), config)
     if not current.empty:
         snapshots.append(current)
-    combined = pd.concat(snapshots, ignore_index=True)
+    combined = pd.concat(snapshots, ignore_index=True).drop_duplicates(
+        ["date", "security_id", "symbol", "source"],
+        keep="last",
+    )
     combined["date"] = pd.to_datetime(combined["date"]).dt.normalize()
     membership = combined[
         ["date", "security_id", "symbol", "security_type", "source"]
@@ -223,7 +420,17 @@ def sync_universe(
 
     for year, group in membership.groupby(membership["date"].dt.year):
         write_parquet(group, root / "membership_by_year" / f"year={year}" / "part.parquet")
-    return UniverseSyncResult(master, history, intervals, membership, validation)
+    return UniverseSyncResult(
+        master,
+        history,
+        intervals,
+        membership,
+        validation,
+        historical_months=len(historical_dates),
+        requested_months=len(requested_dates),
+        next_missing_date=next_missing_date,
+        warning=sync_warning,
+    )
 
 
 def universe_coverage_report(config: AppConfig, prices: pd.DataFrame | None = None) -> pd.DataFrame:

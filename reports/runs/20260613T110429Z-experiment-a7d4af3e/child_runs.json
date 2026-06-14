@@ -1,0 +1,22 @@
+[
+  {
+    "period": "full",
+    "run_id": "20260613T110430Z-backtest-9479583b"
+  },
+  {
+    "period": "first_half",
+    "run_id": "20260613T110944Z-backtest-d3d61cf0"
+  },
+  {
+    "period": "second_half",
+    "run_id": "20260613T111208Z-backtest-62ce2e81"
+  },
+  {
+    "period": "top_n_30",
+    "run_id": "20260613T111509Z-backtest-782c0676"
+  },
+  {
+    "period": "rebalance_shift_+5",
+    "run_id": "20260613T112058Z-backtest-07dd2cae"
+  }
+]

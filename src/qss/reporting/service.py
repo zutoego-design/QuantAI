@@ -33,6 +33,12 @@ def render_saved_backtest(run_path: str | Path) -> ReportBundle:
     factor_diagnostics = pd.read_csv(bundle.root / "factor_diagnostics.csv")
     data_diagnostics = pd.read_csv(bundle.root / "data_diagnostics.csv")
     sensitivity = pd.read_csv(bundle.root / "delisting_sensitivity.csv")
+    sector_attribution_path = bundle.root / "sector_return_attribution_summary.csv"
+    sector_attribution = (
+        pd.read_csv(sector_attribution_path)
+        if sector_attribution_path.exists()
+        else pd.DataFrame()
+    )
     manifest = json.loads(bundle.manifest.read_text(encoding="utf-8"))
     bundle.html_report.write_text(
         render_backtest_report(
@@ -44,6 +50,7 @@ def render_saved_backtest(run_path: str | Path) -> ReportBundle:
             factor_diagnostics=factor_diagnostics,
             data_diagnostics=data_diagnostics,
             delisting_sensitivity=sensitivity,
+            sector_attribution=sector_attribution,
             manifest=manifest,
         ),
         encoding="utf-8",

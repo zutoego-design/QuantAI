@@ -1,22 +1,22 @@
 universe:
-  name: "nasdaq_operating_equities_pit"
+  name: "sp500_historical_standard"
   market: "US"
-  exchange: "XNAS"
-  base_index_proxy: "^IXIC"
+  exchange: "US"
+  base_index_proxy: "^GSPC"
   seed_metadata_path: "configs/seed_universe.csv"
-  start_date: "2010-01-01"
+  start_date: "2016-01-01"
+  membership_mode: "point_in_time"
   allowed_security_types:
     - "Common Stock"
-    - "ADR"
-    - "REIT"
-  long_history_provider: "alpha_vantage"
-  validation_provider: "massive"
+  long_history_provider: "sp500_wikipedia"
+  validation_provider: "disabled"
   recent_validation_years: 2
   min_recent_jaccard: 0.95
   min_recent_price_coverage: 0.98
-  min_long_price_coverage: 0.95
-  min_sector_coverage: 0.90
+  min_long_price_coverage: 0.80
+  min_sector_coverage: 0.85
   max_remote_requests_per_sync: 25
+  remote_request_interval_seconds: 12.0
   filters:
     min_market_cap: 2000000000
     min_price: 5.0

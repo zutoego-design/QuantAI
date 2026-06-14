@@ -1,0 +1,2 @@
+model_type,folds,mean_mse,mean_mae,mean_rank_ic
+ridge,34,0.07708080137883097,0.23947921751317652,0.0038674475450427253

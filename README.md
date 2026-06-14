@@ -1,26 +1,49 @@
-# QuantAI Research System v0.2
+# QuantAI Research System
 
-Point-in-time Nasdaq equity research, factor diagnostics, ledger-based backtesting,
+S&P 500 point-in-time equity research, factor diagnostics, ledger-based backtesting,
 professional reporting, and bounded AI experiment orchestration.
 
 This is a research and monitoring system. It does not route live orders.
 
 ## Current Status
 
-The `v0.2.0` code architecture and deterministic acceptance suite are complete.
-The existing 26-stock output is preserved as `legacy-demo` and is not trusted for
-strategy decisions.
+`v0.2` and `v0.3` are archived delivery baselines. The active system adds
+preregistered confirmatory studies, SHA-256 data snapshots, a shared holdout portfolio
+simulator for rule and ML scores, and statistical evidence gates.
 
-Live historical-data acceptance is currently `invalid` because the workspace does not
-have the required free API credentials or complete 2010+ cached universe history.
-Strict gates prevent those legacy inputs from publishing a new valid report.
+The former canonical rule experiment is retained as a `legacy_reference`:
+
+- `reports/runs/20260613T133519Z-experiment-7ad846cd`
+- full child: `reports/runs/20260613T133520Z-backtest-11107a4e`
+- status: `valid`
+- data cutoff: `2026-06-11`
+- model: `rule_score`
+- acceptance: `20260613T144054Z-acceptance-dafe14fb`, 15/15 passed
+- bias review: `eligible_for_human_review`
+
+Its engineering artifacts remain valid, but it is not confirmatory evidence under the
+active methodology. New research claims must use a development period, an isolated
+holdout period, a frozen data snapshot, multiple-testing controls, block bootstrap,
+Deflated Sharpe, and style-factor attribution.
+
+The first real confirmatory example under the active methodology is
+[`20260614T011051Z-experiment-ec84fa0a`](reports/runs/20260614T011051Z-experiment-ec84fa0a/).
+Its artifacts are `valid`, while its research evidence is `rejected` because the
+Deflated Sharpe probability is below 95% after three actual attempts and the
+preregistered factors did not pass the joint direction and FDR gate. See the
+[holdout baseline comparison](reports/research/holdout_baseline_comparison.md).
+
+Human approval approve/reject paths and a ten-trading-day risk dry run are validated.
+These results do not authorize live or paper-broker order routing.
 
 See:
 
-- [Project status](docs/PROJECT_STATUS.md)
+- [Documentation](docs/README.md)
 - [Research methodology](docs/RESEARCH_METHODOLOGY.md)
-- [Data limitations](docs/DATA_LIMITATIONS.md)
-- [Final code review](docs/CODE_REVIEW.md)
+- [Research credibility plan](docs/RESEARCH_CREDIBILITY_PLAN.md)
+- [Operations](docs/OPERATIONS.md)
+- [Archived v0.3 documents](docs/archive/v0.3/README.md)
+- [Archived v0.2 documents](docs/archive/v0.2/README.md)
 
 ## Setup
 
@@ -31,31 +54,68 @@ python -m venv .venv
 .\.venv\Scripts\python.exe -m pip install -e ".[dev]"
 ```
 
-Configure these environment variables before live synchronization:
+Set a real SEC contact string before heavier SEC synchronization:
 
 ```powershell
-$env:ALPHAVANTAGE_API_KEY = "..."
-$env:MASSIVE_API_KEY = "..."
-$env:FRED_API_KEY = "..."
 $env:SEC_USER_AGENT = "Your Name your.email@example.com"
 ```
 
-`POLYGON_API_KEY` may be used instead of `MASSIVE_API_KEY`.
+`FRED_API_KEY` is optional but recommended; without it Macro uses FRED's public graph
+CSV endpoint.
 
-## Trusted Operating Flow
+## Recommended Operating Flow
 
-Free-tier universe synchronization is resumable and caches each date. Run it repeatedly
-until `validate-data` passes.
+Use the dashboard button **Run S&P 500 Data + Backtest**. It reconstructs S&P 500
+membership from the current constituents table plus the historical constituent-change
+log, downloads live prices, SEC fundamentals, and FRED macro data, validates that
+synthetic rows are zero, and then runs the strict backtest.
+
+The equivalent foreground CLI command is:
 
 ```powershell
+.\.venv\Scripts\python.exe -m qss.cli autopilot-run `
+  --config configs/default.yaml `
+  --start 2023-01-01 `
+  --end 2026-06-12 `
+  --run-backtest
+```
+
+For a background worker, use:
+
+The equivalent CLI commands are:
+
+```powershell
+.\.venv\Scripts\python.exe -m qss.cli autopilot-start `
+  --config configs/default.yaml `
+  --start 2023-01-01 `
+  --end 2026-06-12
+
+.\.venv\Scripts\python.exe -m qss.cli autopilot-status `
+  --config configs/default.yaml
+```
+
+Autopilot state and logs are stored under `reports/data_autopilot/`.
+
+Quickstart remains available only as an optional smoke test. It intentionally uses
+simulated fundamentals/macro and writes to `data/quickstart`, so do not use it for
+research conclusions.
+
+The individual commands below remain available for diagnostics:
+
+```powershell
+.\.venv\Scripts\python.exe -m qss.cli data-status `
+  --config configs/default.yaml `
+  --start 2023-01-01 `
+  --end 2026-06-12
+
 .\.venv\Scripts\python.exe -m qss.cli sync-universe `
   --config configs/default.yaml `
-  --start 2010-01-01 `
+  --start 2023-01-01 `
   --end 2026-06-12
 
 .\.venv\Scripts\python.exe -m qss.cli ingest-prices `
   --config configs/default.yaml `
-  --start 2009-01-01 `
+  --start 2021-01-01 `
   --end 2026-06-12
 
 .\.venv\Scripts\python.exe -m qss.cli ingest-fundamentals `
@@ -66,7 +126,7 @@ until `validate-data` passes.
 
 .\.venv\Scripts\python.exe -m qss.cli validate-data `
   --config configs/default.yaml `
-  --start 2010-01-01 `
+  --start 2023-01-01 `
   --end 2026-06-12
 ```
 
@@ -75,7 +135,7 @@ Only after validation is `valid`:
 ```powershell
 .\.venv\Scripts\python.exe -m qss.cli backtest `
   --config configs/default.yaml `
-  --start 2010-01-01 `
+  --start 2023-01-01 `
   --end 2026-06-12
 
 .\.venv\Scripts\python.exe -m qss.cli acceptance-check `
@@ -87,7 +147,10 @@ Only after validation is `valid`:
 An experiment YAML or JSON defines:
 
 - hypothesis
-- point-in-time universe
+- research stage and study/trial identity
+- development and independent holdout periods for confirmatory studies
+- primary metric, threshold, null hypothesis, and expected factor directions
+- configured S&P 500 historical universe
 - selected factors
 - preprocessing overrides
 - portfolio constraints
@@ -103,8 +166,38 @@ Run it with:
 ```
 
 The orchestrator performs the data gate, factor diagnostics, full and subperiod
-backtests, cost/delisting sensitivity, baseline comparison, and research memo. It does
-not modify raw data or automatically promote strategies.
+backtests, cost/delisting/Top-N/rebalance-day sensitivity, optional purged walk-forward
+ML evaluation, baseline comparison, critic audit, and research memo. It does not modify
+raw data or automatically promote strategies.
+
+Within one experiment, normalized datasets and per-signal factor snapshots are reused.
+Robustness children emit metrics-only artifacts and run with two workers by default,
+while the canonical full child retains the complete acceptance bundle.
+
+## Registry And Approval
+
+```powershell
+.\.venv\Scripts\python.exe -m qss.cli registry-refresh
+.\.venv\Scripts\python.exe -m qss.cli registry-query --model-type ridge
+```
+
+The confirmatory example is `experiments/confirmatory_rule_score.yaml`.
+
+Monthly rebalances write candidate weights and internal orders. Only an explicit human
+transition can create approved target weights:
+
+```powershell
+.\.venv\Scripts\python.exe -m qss.cli approve-rebalance `
+  --packet reports/approvals/<run_id>/approval_packet.json `
+  --state approved_for_candidate `
+  --reviewer reviewer@example.com
+```
+
+Cache SEC filing text for the event-factor pipeline with:
+
+```powershell
+.\.venv\Scripts\python.exe -m qss.cli ingest-sec-text --max-filings 100
+```
 
 ## Frontend
 
@@ -114,14 +207,19 @@ start_frontend.bat
 
 Open `http://127.0.0.1:8501`.
 
-The frontend reads `reports/latest_run.json` only. If there is no valid backtest, it
-does not fall back to legacy metrics.
+Before the frontend starts, it generates a comprehensive report from the newest
+valid standalone backtest or research experiment. Internal metrics-only robustness
+runs are excluded. Confirmatory experiments use their holdout ledger and keep
+artifact validity separate from the research evidence decision. The latest report pointer is
+`reports/comprehensive/latest.json`; `reports/latest_run.json` is only a fallback
+for older backtest views.
 
 ## Main Interfaces
 
 - `UniverseProvider.snapshot(as_of_date)`
 - `PriceProvider.fetch(security_ids, start, end)`
 - `ExperimentSpec`
+- `ResearchProtocol`
 - `BacktestRunSpec`
 - `RunManifest`
 - `ReportBundle`
@@ -130,10 +228,25 @@ New CLI commands:
 
 - `snapshot-legacy-baseline`
 - `sync-universe`
+- `data-status`
+- `autopilot-start`
+- `autopilot-status`
+- `autopilot-stop`
 - `validate-data`
+- `quickstart`
 - `run-experiment`
 - `render-report`
 - `acceptance-check`
+- `registry-query`
+- `registry-refresh`
+- `ingest-style-factors`
+- `approve-rebalance`
+- `ingest-sec-text`
+- `job-definitions`
+- `historical-replay`
+- `forward-init`
+- `forward-record`
+- `forward-status`
 
 Existing pipeline commands remain available and use the same core services. In
 research mode, factor computation, scoring, rebalancing, experiments, and backtests
@@ -155,6 +268,14 @@ A valid backtest includes:
 - daily returns, holdings, trades, and rebalances in CSV/Parquet
 - monthly returns and drawdown episodes
 - factor diagnostics, quantiles, decay, and correlations
+- feature snapshots, factor metadata, labels, and label validation
+- data snapshot identity and preregistered protocol metadata
+- ML split manifests and fold metrics when enabled
+- common-ledger rule and ML holdout evaluations
+- HAC/FDR factor evidence, block-bootstrap intervals, Deflated Sharpe, and
+  Fama-French style attribution for confirmatory experiments
+- an independent `supported`, `inconclusive`, or `rejected` research decision
+- deterministic bias review and final research report
 - data diagnostics, sector exposure, concentration, and delisting sensitivity
 
 The legacy baseline is:
@@ -174,9 +295,9 @@ reports/baselines/legacy-demo-20260612.json
 
 ## Important Limitations
 
-- The 2010+ free-data membership track is approximate.
-- Recent two-year cross-source validation does not make the long history institutional-grade.
+- S&P 500 membership is reconstructed from the free Wikipedia constituents and
+  changes tables; licensed index membership remains the institutional upgrade.
+- Some removed constituents have incomplete free Yahoo/Stooq price histories.
 - Yahoo Finance and Stooq are not authoritative delisting or corporate-action feeds.
 - SEC SIC sector mapping is approximate and is not official GICS.
 - FRED revision vintages are not reconstructed.
-- This directory is not currently a Git checkout.

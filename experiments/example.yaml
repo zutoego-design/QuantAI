@@ -1,5 +1,5 @@
-hypothesis: "Quality and medium-term momentum improve risk-adjusted Nasdaq returns."
-universe: "nasdaq_operating_equities_pit"
+hypothesis: "Quality and medium-term momentum improve risk-adjusted S&P 500 returns."
+universe: "sp500_historical_standard"
 factors:
   - roe
   - gross_margin
@@ -23,7 +23,27 @@ costs:
   slippage_bps: 5.0
   market_impact_coefficient: 0.10
   max_adv_participation: 0.10
-start_date: "2010-01-01"
+model:
+  enabled: true
+  model_type: "ridge"
+  target: "cross_sectional_rank"
+  parameters:
+    alpha: 1.0
+  portfolio_top_n: 50
+  transaction_cost_bps: 10.0
+  walk_forward:
+    train_periods: 18
+    min_train_periods: 12
+    test_periods: 3
+    step_periods: 3
+    purge: true
+    embargo_days: 5
+robustness_tests:
+  - subperiod
+  - cost_sensitivity
+  - top_n_sensitivity
+  - rebalance_day_shift
+start_date: "2023-01-01"
 end_date: "2026-06-12"
 seed: 42
 max_years: 20

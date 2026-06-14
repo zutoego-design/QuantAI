@@ -1,0 +1,13 @@
+includes:
+  - configs/default.yaml
+
+text_factors:
+  enabled: true
+
+factor_groups:
+  text_event:
+    weight: 0.10
+    factors:
+      risk_disclosure_score:
+        weight: 1.0
+        direction: -1

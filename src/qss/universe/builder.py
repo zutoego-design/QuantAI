@@ -17,6 +17,7 @@ def build_universe(
     fundamentals: pd.DataFrame,
     security_master: pd.DataFrame,
     config: UniverseConfig,
+    latest_fundamentals: pd.DataFrame | None = None,
 ) -> pd.DataFrame:
     as_of_date = pd.Timestamp(as_of_date).normalize()
     security_master = security_master.copy()
@@ -54,7 +55,11 @@ def build_universe(
         len(required_dates), 1
     )
 
-    latest_fund = latest_fundamentals_as_of(fundamentals, as_of_date)
+    latest_fund = (
+        latest_fundamentals
+        if latest_fundamentals is not None
+        else latest_fundamentals_as_of(fundamentals, as_of_date)
+    )
     latest_fund["market_cap"] = latest_fund["shares_outstanding"] * latest_prices.set_index("symbol")["price"].reindex(latest_fund["symbol"]).values
 
     if "listing_date" in security_master:

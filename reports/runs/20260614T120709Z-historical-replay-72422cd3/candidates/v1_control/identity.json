@@ -1,0 +1,8 @@
+{
+  "candidate_id": "v1_control",
+  "description": "Frozen current multifactor strategy used as the historical control.",
+  "candidate_file": "D:\\QuantAI\\configs\\historical_replay\\v1_control.yaml",
+  "candidate_file_sha256": "1e89405b355c07d9783c8ebc1c60b2117b2c128d648bcd4d7d6023764a50b666",
+  "config_hash": "80084eb681ed89814b157771b04296a1cccf88a287c508148dcff93e866bcda8",
+  "data_snapshot_id": "6018dcfa1a1d41d513a0840db5a0b2d3d645525e360439cce7f97709d08293e5"
+}

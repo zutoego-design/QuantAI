@@ -1,0 +1,11 @@
+{
+  "blocking_issues": [],
+  "major_concerns": [
+    "No delisting liquidation was observed; real delisting handling remains unverified."
+  ],
+  "required_follow_up_tests": [
+    "Compare rebalance-day and portfolio-size sensitivity.",
+    "Review point-in-time universe and delisting coverage."
+  ],
+  "recommendation": "hold_for_further_testing"
+}

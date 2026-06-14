@@ -1,0 +1,52 @@
+includes:
+  - configs/default.yaml
+
+paths:
+  raw_data: "data/quickstart/raw"
+  silver_data: "data/quickstart/silver"
+  gold_data: "data/quickstart/gold"
+  reports: "reports"
+
+runtime:
+  research_mode: false
+  allow_synthetic: true
+
+quickstart:
+  universe_source: "sp500"
+  target_symbols: 500
+  max_symbols: 1000
+  prefer_seed_symbols: true
+
+data_sources:
+  prices:
+    allow_synthetic_fallback: true
+  fundamentals:
+    fallback_to_synthetic: true
+
+strategy:
+  benchmark: "SPY"
+  min_factor_coverage: 0.60
+
+universe:
+  filters:
+    min_market_cap: 100000000
+    min_price: 1.0
+    min_adv_20d: 100000
+    min_history_days: 252
+    min_price_data_completeness: 0.80
+
+optimizer:
+  constraints:
+    min_weight: 0.0
+    max_weight: 0.05
+    target_num_holdings: 50
+    max_sector_weight: 0.35
+    max_turnover_per_rebalance: 2.0
+    tracking_error_limit: null
+  fallback:
+    top_n: 50
+
+backtest:
+  start_date: "2023-01-01"
+  primary_benchmark: "^GSPC"
+  secondary_benchmark: "SPY"

@@ -1,0 +1,14 @@
+check,passed,value,severity
+prices_nonempty,True,794813,error
+fundamentals_nonempty,True,665551,error
+membership_nonempty,True,20624,error
+macro_nonempty,True,20782,error
+sector_mapping_coverage,True,0.853309481216458,error
+monthly_membership_history,True,1.0,error
+synthetic_rows_zero,True,0,error
+fundamental_available_dates,False,33,error
+primary_benchmark_present,False,^GSPC,error
+secondary_benchmark_present,True,SPY,error
+secondary_benchmark_complete,True,0,error
+sp500_source_audit,True,sp500_wikipedia,error
+credential_sec_user_agent,True,True,error

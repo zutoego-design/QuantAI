@@ -1,0 +1,11 @@
+candidate_id: v1_drawdown_fixed
+description: Current multifactor strategy with corrected trailing drawdown direction.
+factor_groups_mode: merge
+overrides:
+  strategy:
+    name: multifactor_balanced_us_v1_drawdown_fixed
+  factor_groups:
+    low_volatility:
+      factors:
+        max_drawdown_252d:
+          direction: 1

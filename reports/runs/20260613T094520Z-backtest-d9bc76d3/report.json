@@ -1,0 +1,171 @@
+{
+  "schema_version": "1.0",
+  "run_id": "20260613T094520Z-backtest-d9bc76d3",
+  "status": "valid",
+  "metrics": [
+    {
+      "category": "performance",
+      "metric": "total_return",
+      "value": 5.989910911694526
+    },
+    {
+      "category": "performance",
+      "metric": "gross_total_return",
+      "value": 6.014514945393931
+    },
+    {
+      "category": "performance",
+      "metric": "net_total_return",
+      "value": 5.989910911694526
+    },
+    {
+      "category": "performance",
+      "metric": "benchmark_total_return",
+      "value": 2.6176698027634453
+    },
+    {
+      "category": "performance",
+      "metric": "cagr",
+      "value": 0.20522817981858643
+    },
+    {
+      "category": "performance",
+      "metric": "annualized_volatility",
+      "value": 0.18606804030669025
+    },
+    {
+      "category": "performance",
+      "metric": "downside_volatility",
+      "value": 0.1306855370629329
+    },
+    {
+      "category": "performance",
+      "metric": "sharpe_ratio",
+      "value": 1.0970149431846739
+    },
+    {
+      "category": "performance",
+      "metric": "sortino_ratio",
+      "value": 1.5619128577880175
+    },
+    {
+      "category": "performance",
+      "metric": "calmar_ratio",
+      "value": 0.5453839626800362
+    },
+    {
+      "category": "performance",
+      "metric": "omega_ratio",
+      "value": 1.2361869054393426
+    },
+    {
+      "category": "performance",
+      "metric": "max_drawdown",
+      "value": -0.37630035692668307
+    },
+    {
+      "category": "performance",
+      "metric": "var_95_daily",
+      "value": -0.016925609450815025
+    },
+    {
+      "category": "performance",
+      "metric": "cvar_95_daily",
+      "value": -0.027894072653821874
+    },
+    {
+      "category": "benchmark",
+      "metric": "alpha_annualized",
+      "value": 0.06576494412393634
+    },
+    {
+      "category": "benchmark",
+      "metric": "beta",
+      "value": 0.9904889058671851
+    },
+    {
+      "category": "benchmark",
+      "metric": "correlation",
+      "value": 0.956926638930775
+    },
+    {
+      "category": "benchmark",
+      "metric": "r_squared",
+      "value": 0.9157085922953498
+    },
+    {
+      "category": "benchmark",
+      "metric": "tracking_error",
+      "value": 0.0540481512893338
+    },
+    {
+      "category": "benchmark",
+      "metric": "information_ratio",
+      "value": 1.1922036977000334
+    },
+    {
+      "category": "benchmark",
+      "metric": "up_capture",
+      "value": 1.0202981907471185
+    },
+    {
+      "category": "benchmark",
+      "metric": "down_capture",
+      "value": 0.9478494593063302
+    },
+    {
+      "category": "portfolio",
+      "metric": "average_turnover",
+      "value": 0.033952113954705765
+    },
+    {
+      "category": "portfolio",
+      "metric": "average_number_of_holdings",
+      "value": 38.416
+    },
+    {
+      "category": "portfolio",
+      "metric": "cost_drag",
+      "value": 0.024604033699405115
+    },
+    {
+      "category": "portfolio",
+      "metric": "max_adv_participation",
+      "value": 0.0010440300507393299
+    },
+    {
+      "category": "portfolio",
+      "metric": "average_holding_period_days",
+      "value": 1269.0642857142857
+    },
+    {
+      "category": "portfolio",
+      "metric": "estimated_capacity",
+      "value": 95782683.58193809
+    },
+    {
+      "category": "portfolio",
+      "metric": "average_hhi",
+      "value": 0.04002471032142944
+    },
+    {
+      "category": "portfolio",
+      "metric": "average_effective_holdings",
+      "value": 25.171376154429776
+    }
+  ],
+  "artifacts": {
+    "daily_returns": "daily_returns.parquet",
+    "rebalances": "rebalances.parquet",
+    "holdings": "holdings.parquet",
+    "trades": "trades.parquet",
+    "factor_diagnostics": "factor_diagnostics.csv",
+    "factor_metadata": "factor_metadata.json",
+    "feature_snapshot": "feature_snapshot.parquet",
+    "label_config": "label_config.json",
+    "cost_sensitivity": "cost_sensitivity.csv",
+    "bias_review": "bias_review.md",
+    "data_diagnostics": "data_diagnostics.csv",
+    "html": "report.html"
+  }
+}

@@ -1,0 +1,12 @@
+check,passed,value,severity
+prices_nonempty,False,0,error
+fundamentals_nonempty,False,0,error
+membership_nonempty,False,0,error
+macro_nonempty,False,0,error
+synthetic_rows_zero,True,0,error
+universe_coverage,False,1/1 failed,error
+recent_cross_source_validation,False,"{'month_coverage': 0.0, 'minimum_jaccard': 0.0}",error
+credential_alphavantage_api_key,False,False,error
+credential_massive_api_key,False,False,error
+credential_fred_api_key,True,True,error
+credential_sec_user_agent,False,False,error

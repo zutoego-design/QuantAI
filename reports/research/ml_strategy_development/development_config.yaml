@@ -1,0 +1,53 @@
+model_factors:
+- book_to_market
+- earnings_yield
+- free_cash_flow_yield
+- sales_yield
+- beta_to_spy
+- max_drawdown_252d
+- realized_vol_252d
+- realized_vol_60d
+style_exposures:
+- book_to_market
+- earnings_yield
+- free_cash_flow_yield
+- sales_yield
+- beta_to_spy
+- realized_vol_252d
+- realized_vol_60d
+lightgbm_parameters:
+  n_estimators: 80
+  learning_rate: 0.03
+  num_leaves: 7
+  min_child_samples: 30
+  subsample: 0.9
+  colsample_bytree: 0.9
+  reg_alpha: 0.1
+  reg_lambda: 1.5
+  random_state: 42
+  verbosity: -1
+ml_config:
+  enabled: true
+  model_type: lightgbm
+  target: cross_sectional_rank
+  parameters:
+    n_estimators: 80
+    learning_rate: 0.03
+    num_leaves: 7
+    min_child_samples: 30
+    subsample: 0.9
+    colsample_bytree: 0.9
+    reg_alpha: 0.1
+    reg_lambda: 1.5
+    random_state: 42
+    verbosity: -1
+  portfolio_top_n: 25
+  transaction_cost_bps: 10.0
+  walk_forward:
+    train_periods: 60
+    test_periods: 3
+    step_periods: 3
+    min_train_periods: 12
+    rolling: true
+    purge: true
+    embargo_days: 5

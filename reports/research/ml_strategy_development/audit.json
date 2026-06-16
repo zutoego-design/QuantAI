@@ -1,0 +1,28 @@
+{
+  "source_run": "20260613T115415Z-backtest-01e41c77",
+  "generated_at": "2026-06-16T12:55:13.774953+00:00",
+  "research_stage": "exploratory",
+  "validation_conditions_changed": false,
+  "official_confirmatory_claim": false,
+  "uses_closed_v1_holdout_as_confirmation": false,
+  "existing_ml_search_candidates": 59,
+  "new_exploratory_candidates": 11,
+  "cumulative_trial_count": 70,
+  "purge_enabled": true,
+  "embargo_days": 5,
+  "label_leakage_audit": {
+    "style_residual_rank_lgbm": {
+      "passed": true,
+      "rule": "max train label_end_time < test_start - embargo_days for every fold"
+    },
+    "sector_relative_rank_lgbm": {
+      "passed": true,
+      "rule": "max train label_end_time < test_start - embargo_days for every fold"
+    }
+  },
+  "known_limits": [
+    "Development search only; not official confirmatory evidence.",
+    "Fresh v2 forward holdout starts 2026-07-01 and is unavailable on 2026-06-16.",
+    "Score neutralization reduces direct style ranking exposure but does not impose a hard beta-neutral optimizer constraint."
+  ]
+}

@@ -1,0 +1,10 @@
+spec,error
+"('value_low_risk', 'lgbm_ranker_int', 'cross_sectional_rank', 25, True, 36, 0)",LightGBMError('Label 46 is not less than the number of label mappings (31)')
+"('value_low_risk', 'lgbm_ranker_int', 'cross_sectional_rank', 30, True, 36, 0)",LightGBMError('Label 46 is not less than the number of label mappings (31)')
+"('value_low_risk', 'lgbm_ranker_int', 'cross_sectional_rank', 35, True, 36, 0)",LightGBMError('Label 46 is not less than the number of label mappings (31)')
+"('value_low_risk_momentum3', 'lgbm_ranker_int', 'cross_sectional_rank', 25, True, 36, 0)",LightGBMError('Label 46 is not less than the number of label mappings (31)')
+"('value_low_risk_momentum3', 'lgbm_ranker_int', 'cross_sectional_rank', 30, True, 36, 0)",LightGBMError('Label 46 is not less than the number of label mappings (31)')
+"('value_low_risk_momentum3', 'lgbm_ranker_int', 'cross_sectional_rank', 35, True, 36, 0)",LightGBMError('Label 46 is not less than the number of label mappings (31)')
+"('value_low_risk_sales', 'lgbm_ranker_int', 'cross_sectional_rank', 25, True, 36, 0)",LightGBMError('Label 46 is not less than the number of label mappings (31)')
+"('value_low_risk_sales', 'lgbm_ranker_int', 'cross_sectional_rank', 30, True, 36, 0)",LightGBMError('Label 46 is not less than the number of label mappings (31)')
+"('value_low_risk_sales', 'lgbm_ranker_int', 'cross_sectional_rank', 35, True, 36, 0)",LightGBMError('Label 46 is not less than the number of label mappings (31)')

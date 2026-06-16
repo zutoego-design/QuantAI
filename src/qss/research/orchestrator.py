@@ -24,6 +24,7 @@ from qss.research.decision import (
     write_research_decision,
 )
 from qss.research.governance import confirmatory_rerun_guard
+from qss.research.ml_strategy_development import style_neutralized_score_frame
 from qss.research.portfolio_evaluation import simulate_score_portfolio
 from qss.research.protocol import (
     ResearchProtocol,
@@ -231,6 +232,42 @@ def _config_diff(base: AppConfig, variant: AppConfig) -> dict[str, dict]:
     }
 
 
+def _apply_model_score_neutralization(
+    model_scores: pd.DataFrame,
+    factors: pd.DataFrame,
+    spec: ExperimentSpec,
+) -> tuple[pd.DataFrame, dict]:
+    settings = spec.model.get("score_neutralization", {})
+    if not settings or not settings.get("enabled", False):
+        return model_scores, {"applied": False}
+    if not isinstance(settings, dict):
+        raise ValueError("model.score_neutralization must be a mapping.")
+    exposures = settings.get("exposures")
+    if not isinstance(exposures, list) or not exposures:
+        raise ValueError("model.score_neutralization.exposures must be a non-empty list.")
+    include_sector = bool(settings.get("include_sector_dummies", True))
+    required_factors = sorted(set(spec.factors) | set(exposures)) if spec.factors else exposures
+    neutralized = style_neutralized_score_frame(
+        model_scores,
+        factors,
+        score_column="total_score",
+        factors=required_factors,
+        exposure_columns=exposures,
+        include_sector=include_sector,
+    )
+    if neutralized.empty:
+        raise ValueError("model.score_neutralization produced no score rows.")
+    return neutralized, {
+        "applied": True,
+        "method": settings.get("method", "same_date_cross_sectional_residual"),
+        "include_sector_dummies": include_sector,
+        "exposures": exposures,
+        "input_rows": len(model_scores),
+        "output_rows": len(neutralized),
+        "output_score": settings.get("output_score", "style_neutral_score"),
+    }
+
+
 def _factor_evidence(
     diagnostics: pd.DataFrame,
     protocol: ResearchProtocol,
@@ -391,10 +428,16 @@ class ResearchOrchestrator:
                 "portfolio_top_n",
                 "transaction_cost_bps",
                 "walk_forward",
+                "score_neutralization",
             }
             unknown_model = set(spec.model) - allowed_model
             if unknown_model:
                 raise ValueError(f"Unsupported model fields: {sorted(unknown_model)}")
+            if "score_neutralization" in spec.model and not isinstance(
+                spec.model["score_neutralization"],
+                dict,
+            ):
+                raise ValueError("model.score_neutralization must be a mapping.")
             config.ml.enabled = bool(spec.model.get("enabled", True))
             for key in [
                 "model_type",
@@ -499,6 +542,11 @@ class ResearchOrchestrator:
                 how="left",
             )
             model_root = holdout_root / config.ml.model_type
+            model_scores, neutralization_report = _apply_model_score_neutralization(
+                model_scores,
+                factors,
+                spec,
+            )
             selected_evaluation = simulate_score_portfolio(
                 model_scores,
                 data_cache.prices,
@@ -512,6 +560,11 @@ class ResearchOrchestrator:
                 encoding="utf-8",
             )
             predictions.to_csv(model_root / "predictions.csv", index=False)
+            model_scores.to_csv(model_root / "model_scores.csv", index=False)
+            (model_root / "score_neutralization.json").write_text(
+                json.dumps(neutralization_report, indent=2),
+                encoding="utf-8",
+            )
             selected_model = config.ml.model_type
 
         selected_metrics = selected_evaluation.metrics.set_index("metric")[

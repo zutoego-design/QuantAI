@@ -49,6 +49,7 @@ st.set_page_config(
 
 
 REPORTS = ROOT / "reports"
+ML_RESEARCH = REPORTS / "research" / "ml_strategy_development"
 DATA = ROOT / "data"
 RAW = DATA / "raw"
 SILVER = DATA / "silver"
@@ -75,22 +76,22 @@ def _apply_style() -> None:
         """
         <style>
         :root {
-            --canvas: #f3f6fa;
-            --canvas-warm: #f8f4ee;
+            --canvas: #f5f7f7;
+            --canvas-warm: #eef4f2;
             --surface: #ffffff;
             --surface-soft: #f8fafc;
-            --navy: #172a46;
-            --navy-soft: #243b5d;
+            --navy: #173c3a;
+            --navy-soft: #24534f;
             --ink: #172033;
             --muted: #5f6d82;
             --line: #dce3ec;
             --line-strong: #c9d3e1;
-            --accent: #e75f43;
-            --accent-deep: #c8472d;
+            --accent: #2f8f83;
+            --accent-deep: #236960;
             --good: #18794e;
             --warn: #9a650f;
             --bad: #b23a3a;
-            --focus: rgba(231, 95, 67, 0.22);
+            --focus: rgba(47, 143, 131, 0.22);
             --shadow-sm: 0 8px 24px rgba(23, 42, 70, 0.07);
             --shadow-lg: 0 22px 55px rgba(23, 42, 70, 0.12);
         }
@@ -101,7 +102,6 @@ def _apply_style() -> None:
 
         .stApp {
             background:
-                radial-gradient(circle at 92% 2%, rgba(231, 95, 67, 0.10), transparent 26rem),
                 linear-gradient(135deg, var(--canvas) 0%, var(--canvas-warm) 100%);
             color: var(--ink);
         }
@@ -118,8 +118,7 @@ def _apply_style() -> None:
 
         [data-testid="stSidebar"] {
             background:
-                radial-gradient(circle at 20% 0%, rgba(231, 95, 67, 0.18), transparent 15rem),
-                linear-gradient(180deg, #14253e 0%, #1c3150 100%);
+                linear-gradient(180deg, #153533 0%, #203f3b 100%);
             border-right: 1px solid rgba(255, 255, 255, 0.08);
         }
 
@@ -169,10 +168,9 @@ def _apply_style() -> None:
 
         .hero-shell {
             background:
-                radial-gradient(circle at 88% 15%, rgba(231, 95, 67, 0.28), transparent 15rem),
-                linear-gradient(135deg, #162a47 0%, #29496f 100%);
+                linear-gradient(135deg, #173c3a 0%, #2f6b63 100%);
             color: #ffffff;
-            border-radius: 22px;
+            border-radius: 12px;
             padding: 1.7rem 1.8rem 1.55rem;
             box-shadow: var(--shadow-lg);
             border: 1px solid rgba(255, 255, 255, 0.10);
@@ -223,7 +221,7 @@ def _apply_style() -> None:
 
         .metric-card {
             background: var(--surface);
-            border-radius: 16px;
+            border-radius: 8px;
             padding: 1rem 1.05rem;
             border: 1px solid var(--line);
             box-shadow: var(--shadow-sm);
@@ -255,7 +253,7 @@ def _apply_style() -> None:
 
         .panel-card {
             background: var(--surface);
-            border-radius: 16px;
+            border-radius: 8px;
             border: 1px solid var(--line);
             box-shadow: var(--shadow-sm);
             padding: 1.15rem 1.25rem;
@@ -349,7 +347,7 @@ def _apply_style() -> None:
             padding: 0.35rem;
             margin: 0 0 1rem;
             border: 1px solid var(--line);
-            border-radius: 15px;
+            border-radius: 10px;
             background: rgba(255, 255, 255, 0.92);
             box-shadow: var(--shadow-sm);
         }
@@ -477,7 +475,7 @@ def _apply_style() -> None:
         [data-testid="stVerticalBlockBorderWrapper"] {
             background: rgba(255, 255, 255, 0.78);
             border-color: var(--line) !important;
-            border-radius: 16px !important;
+            border-radius: 8px !important;
             box-shadow: var(--shadow-sm);
         }
 
@@ -529,6 +527,48 @@ def _apply_style() -> None:
             text-transform: uppercase;
         }
 
+        .strategy-rail {
+            display: grid;
+            grid-template-columns: 1.1fr 1.1fr 1.1fr 1.6fr;
+            gap: 0.75rem;
+            margin: 0.4rem 0 1rem;
+        }
+
+        .strategy-cell {
+            background: var(--surface);
+            border: 1px solid var(--line);
+            border-radius: 8px;
+            padding: 0.8rem 0.9rem;
+            box-shadow: var(--shadow-sm);
+        }
+
+        .strategy-cell span {
+            display: block;
+            color: var(--muted);
+            font-size: 0.72rem;
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
+            font-weight: 700;
+            margin-bottom: 0.35rem;
+        }
+
+        .strategy-cell strong {
+            color: var(--ink);
+            font-size: 1.05rem;
+        }
+
+        .quiet-note {
+            color: var(--muted);
+            font-size: 0.9rem;
+            line-height: 1.55;
+        }
+
+        @media (max-width: 900px) {
+            .strategy-rail {
+                grid-template-columns: 1fr;
+            }
+        }
+
         @media (max-width: 900px) {
             .block-container {
                 padding-left: 1rem;
@@ -565,6 +605,24 @@ def _safe_csv(path: Path) -> pd.DataFrame:
         return pd.read_csv(path)
     except (OSError, pd.errors.EmptyDataError, pd.errors.ParserError):
         return pd.DataFrame()
+
+
+def _safe_json(path: Path, default: Any = None) -> Any:
+    if not path.exists():
+        return {} if default is None else default
+    try:
+        return json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return {} if default is None else default
+
+
+def _safe_text(path: Path) -> str:
+    if not path.exists():
+        return ""
+    try:
+        return path.read_text(encoding="utf-8")
+    except OSError:
+        return ""
 
 
 def _fmt_pct(value: float | int | None) -> str:
@@ -625,6 +683,47 @@ def _panel_header(title: str, body: str) -> None:
         """,
         unsafe_allow_html=True,
     )
+
+
+def _metric_value(metrics: pd.DataFrame, metric: str) -> float | None:
+    if metrics.empty or not {"metric", "value"}.issubset(metrics.columns):
+        return None
+    values = metrics.loc[metrics["metric"] == metric, "value"]
+    if values.empty:
+        return None
+    try:
+        return float(values.iloc[0])
+    except (TypeError, ValueError):
+        return None
+
+
+def _payload_metric(payload: dict[str, Any], metric: str) -> float | None:
+    value = (payload.get("metrics") or {}).get(metric)
+    try:
+        return None if value is None else float(value)
+    except (TypeError, ValueError):
+        return None
+
+
+def _ml_daily_candidates(results: pd.DataFrame) -> pd.DataFrame:
+    if results.empty or "kind" not in results.columns:
+        return pd.DataFrame()
+    daily = results.loc[results["kind"] == "daily_simulation"].copy()
+    if daily.empty or "sharpe_ratio" not in daily.columns:
+        return daily
+    return daily.sort_values(
+        ["sharpe_ratio", "deflated_sharpe_probability"],
+        ascending=[False, False],
+        na_position="last",
+    )
+
+
+def _strategy_rail(items: list[tuple[str, str]]) -> None:
+    cells = "\n".join(
+        f'<div class="strategy-cell"><span>{html.escape(label)}</span><strong>{html.escape(value)}</strong></div>'
+        for label, value in items
+    )
+    st.markdown(f'<div class="strategy-rail">{cells}</div>', unsafe_allow_html=True)
 
 
 def _read_yaml_file(path: Path) -> dict[str, Any]:
@@ -716,6 +815,9 @@ def _load_artifacts() -> dict[str, Any]:
     )
     risk_alerts = _safe_csv(risk_files[-1]) if risk_files else pd.DataFrame()
     target_weights_csv = _safe_csv(rebalance_weight_files[-1]) if rebalance_weight_files else pd.DataFrame()
+    ml_results = _safe_csv(ML_RESEARCH / "experiment_results.csv")
+    ml_audit = _safe_json(ML_RESEARCH / "audit.json", {})
+    ml_report = _safe_text(ML_RESEARCH / "strategy_development_report.md")
 
     return {
         "backtest_daily": backtest_daily,
@@ -728,6 +830,9 @@ def _load_artifacts() -> dict[str, Any]:
         "quality": quality,
         "risk_alerts": risk_alerts,
         "target_weights_csv": target_weights_csv,
+        "ml_results": ml_results,
+        "ml_audit": ml_audit,
+        "ml_report": ml_report,
     }
 
 
@@ -746,6 +851,8 @@ def _artifact_snapshot(artifacts: dict[str, Any]) -> list[dict[str, str]]:
         "Alpha Scores": GOLD / "scores" / "alpha_scores.parquet",
         "Universe Membership": SILVER / "universe" / "universe_membership.parquet",
         "Macro Regime": GOLD / "macro" / "macro_regime.parquet",
+        "ML Strategy Report": ML_RESEARCH / "strategy_development_report.md",
+        "ML Candidate Results": ML_RESEARCH / "experiment_results.csv",
         "Risk Alerts": max(sorted((REPORTS / "risk").glob("risk_alerts_*.csv")), default=REPORTS / "risk" / "missing.csv"),
         "Data Quality": max(sorted((REPORTS / "data_quality").glob("data_quality_*.csv")), default=REPORTS / "data_quality" / "missing.csv"),
     }
@@ -823,7 +930,9 @@ def _init_state(artifacts: dict[str, Any]) -> None:
     if "run_history" not in st.session_state:
         st.session_state["run_history"] = []
     if "page" not in st.session_state:
-        st.session_state["page"] = "Research Brief"
+        st.session_state["page"] = "Strategy"
+    if "selected_strategy" not in st.session_state:
+        st.session_state["selected_strategy"] = "Current rule strategy"
 
 
 def _remember_run(label: str, command: list[str], returncode: int, duration: float, output: str) -> None:
@@ -1204,11 +1313,9 @@ def _save_parameter_updates() -> None:
 
 
 def _render_sidebar(artifacts: dict[str, Any], config_error: str | None) -> None:
-    st.sidebar.markdown("## QSS Control Deck")
-    st.sidebar.caption("Run research jobs, tune config, and inspect artifacts from one surface.")
-    st.sidebar.text_input("Config entrypoint", key="config_path")
+    st.sidebar.markdown("## QuantAI")
+    st.sidebar.caption("Strategy first. Controls stay folded until they are needed.")
 
-    st.sidebar.markdown("### Runtime")
     missing = _missing_cli_modules()
     if missing:
         st.sidebar.markdown(
@@ -1223,16 +1330,18 @@ def _render_sidebar(artifacts: dict[str, Any], config_error: str | None) -> None
     latest_portfolio = artifacts["portfolio"]["date"].max() if not artifacts["portfolio"].empty else None
     latest_backtest = artifacts["backtest_daily"]["date"].max() if not artifacts["backtest_daily"].empty else None
     latest_macro = artifacts["macro"]["date"].max() if not artifacts["macro"].empty else None
+    latest_ml = ML_RESEARCH / "strategy_development_report.md"
 
     st.sidebar.markdown("### Freshness")
     st.sidebar.markdown(_status_pill(f"portfolio {str(latest_portfolio)[:10] if latest_portfolio is not None else 'missing'}", "info"), unsafe_allow_html=True)
     st.sidebar.markdown(_status_pill(f"backtest {str(latest_backtest)[:10] if latest_backtest is not None else 'missing'}", "info"), unsafe_allow_html=True)
     st.sidebar.markdown(_status_pill(f"macro {str(latest_macro)[:10] if latest_macro is not None else 'missing'}", "info"), unsafe_allow_html=True)
+    st.sidebar.markdown(_status_pill("ML report ready" if latest_ml.exists() else "ML report missing", "success" if latest_ml.exists() else "warning"), unsafe_allow_html=True)
 
     if config_error:
         st.sidebar.error(f"Config load failed: {config_error}")
     else:
-        st.sidebar.success("Config profile parsed successfully.")
+        st.sidebar.markdown(_status_pill("config parsed", "success"), unsafe_allow_html=True)
 
     history = st.session_state.get("run_history", [])
     if history:
@@ -1242,14 +1351,9 @@ def _render_sidebar(artifacts: dict[str, Any], config_error: str | None) -> None
         st.sidebar.markdown(_status_pill(last["label"], tone), unsafe_allow_html=True)
         st.sidebar.caption(f"{last['finished_at']} | {last['duration']}s")
 
-    st.sidebar.markdown("### Quick Start")
-    st.sidebar.code(
-        "1. Save strategy parameters\n"
-        "2. Run Monthly Pipeline\n"
-        "3. Run Backtest\n"
-        "4. Run Risk Monitor",
-        language="text",
-    )
+    with st.sidebar.expander("Advanced runtime", expanded=False):
+        st.text_input("Config entrypoint", key="config_path")
+        st.caption("Default: configs/default.yaml")
 
 
 def _render_hero(title: str, description: str) -> None:
@@ -1679,6 +1783,8 @@ def _render_universe(artifacts: dict[str, Any]) -> None:
     if universe.empty:
         st.info("No universe artifact found yet. Run the monthly pipeline or build-universe first.")
         return
+    if "sector" not in universe.columns:
+        universe = universe.assign(sector="Unknown")
 
     size = universe.groupby("date")["included"].sum().reset_index(name="universe_size")
     latest_date = universe["date"].max()
@@ -1965,6 +2071,382 @@ def _render_macro_data(artifacts: dict[str, Any]) -> None:
         st.dataframe(snapshot[["artifact", "updated", "size"]], use_container_width=True, hide_index=True)
 
 
+def _render_equity_curve(daily: pd.DataFrame, title: str) -> None:
+    if daily.empty:
+        st.info("No saved daily return series is available for this strategy.")
+        return
+    frame = daily.copy()
+    frame["date"] = pd.to_datetime(frame.get("date"), errors="coerce")
+    frame = frame.dropna(subset=["date"]).sort_values("date")
+    if frame.empty or "portfolio_value" not in frame:
+        st.info("The saved daily return file does not include a portfolio value series.")
+        return
+    if "benchmark_value" not in frame and "benchmark_return" in frame:
+        benchmark_return = pd.to_numeric(
+            frame["benchmark_return"],
+            errors="coerce",
+        ).fillna(0.0)
+        frame["benchmark_value"] = (1.0 + benchmark_return).cumprod() * float(
+            frame["portfolio_value"].iloc[0]
+        )
+    series = ["portfolio_value"]
+    if "benchmark_value" in frame:
+        series.append("benchmark_value")
+    fig = px.line(
+        frame,
+        x="date",
+        y=series,
+        labels={"value": "Value", "variable": "Series"},
+        title=title,
+        template="plotly_white",
+    )
+    fig.update_layout(height=390, legend_title_text="")
+    st.plotly_chart(fig, use_container_width=True)
+
+
+def _render_current_rule_strategy(
+    bundle: ComprehensiveReportBundle | None,
+    error: str | None,
+    artifacts: dict[str, Any],
+) -> None:
+    if bundle is None:
+        st.warning(error or "No valid comprehensive report is available.")
+        return
+    payload = json.loads(bundle.structured_report.read_text(encoding="utf-8"))
+    decision = payload.get("decision") or {}
+    protocol = payload.get("protocol") or {}
+    evidence = str(payload.get("evidence_status", "unknown"))
+    tone = "success" if evidence == "supported" else "warning"
+    if evidence in {"rejected", "rejected_final"}:
+        tone = "error"
+    st.markdown(_status_pill(f"evidence {evidence}", tone), unsafe_allow_html=True)
+
+    _strategy_rail(
+        [
+            ("Study", str(protocol.get("study_id") or "unregistered")),
+            (
+                "Model",
+                str(
+                    decision.get("selected_model")
+                    or payload.get("model_type")
+                    or "rule_score"
+                ),
+            ),
+            ("Net return", _fmt_pct(_payload_metric(payload, "net_total_return"))),
+            ("Sharpe", _fmt_number(_payload_metric(payload, "sharpe_ratio"), 2)),
+        ]
+    )
+    if evidence == "rejected_final":
+        st.error(
+            "当前规则策略已经是 rejected_final。它可以作为历史基线展示，不能继续用关闭的 v1 holdout 调参。"
+        )
+    elif payload.get("code_dirty"):
+        st.warning("This report was generated from a dirty git workspace.")
+
+    _render_equity_curve(artifacts["backtest_daily"], "Current Rule Strategy Equity")
+
+    with st.expander("Source comprehensive report", expanded=False):
+        st.caption(f"Source: {bundle.source_run_id}")
+        components.html(
+            bundle.html_report.read_text(encoding="utf-8"),
+            height=4200,
+            scrolling=True,
+        )
+
+
+def _render_ml_strategy(artifacts: dict[str, Any]) -> None:
+    results = artifacts["ml_results"]
+    audit = artifacts["ml_audit"]
+    daily = _ml_daily_candidates(results)
+    if daily.empty:
+        st.warning(
+            "No ML strategy development report is available yet. Run the ML development workflow first."
+        )
+        return
+
+    best = daily.iloc[0]
+    candidate = str(best["candidate"])
+    simulation_root = ML_RESEARCH / "simulations" / candidate
+    metrics = _safe_csv(simulation_root / "metrics.csv")
+    daily_returns = _safe_csv(simulation_root / "daily_returns.csv")
+    dsr = _safe_json(simulation_root / "deflated_sharpe.json", {})
+    style_summary = _safe_json(simulation_root / "style_factor_summary.json", {})
+
+    st.markdown(
+        _status_pill(str(audit.get("research_stage", "exploratory")), "warning")
+        + _status_pill("not confirmatory", "warning"),
+        unsafe_allow_html=True,
+    )
+    _strategy_rail(
+        [
+            ("Candidate", candidate),
+            ("Net return", _fmt_pct(float(best.get("net_total_return")))),
+            ("Sharpe", _fmt_number(float(best.get("sharpe_ratio")), 2)),
+            ("DSP", _fmt_pct(float(best.get("deflated_sharpe_probability")))),
+        ]
+    )
+    st.warning(
+        "ML 当前只是探索性候选。最佳候选改善明显，但 DSP 仍低于确认性门槛，不能声称已验证 alpha。"
+    )
+
+    left, right = st.columns([1.35, 0.8], gap="large")
+    with left:
+        _render_equity_curve(daily_returns, "ML Style-Neutral Candidate Equity")
+    with right:
+        st.markdown("#### Evidence")
+        evidence_rows = pd.DataFrame(
+            [
+                {
+                    "item": "FF alpha annualized",
+                    "value": _fmt_pct(style_summary.get("alpha_annualized")),
+                },
+                {
+                    "item": "FF alpha t-stat",
+                    "value": _fmt_number(style_summary.get("alpha_t_stat"), 2),
+                },
+                {
+                    "item": "Deflated Sharpe probability",
+                    "value": _fmt_pct(dsr.get("probability")),
+                },
+                {
+                    "item": "Trial count",
+                    "value": _fmt_number(dsr.get("trial_count"), 0),
+                },
+                {
+                    "item": "Average turnover",
+                    "value": _fmt_pct(_metric_value(metrics, "average_turnover")),
+                },
+            ]
+        )
+        st.dataframe(evidence_rows, use_container_width=True, hide_index=True)
+
+    with st.expander("Compare ML candidates", expanded=False):
+        columns = [
+            "candidate",
+            "sharpe_ratio",
+            "net_total_return",
+            "max_drawdown",
+            "beta",
+            "ff_alpha_annualized",
+            "ff_alpha_t_stat",
+            "deflated_sharpe_probability",
+            "passes_daily_dsp_gate",
+        ]
+        available = [column for column in columns if column in daily.columns]
+        st.dataframe(
+            daily[available].head(20),
+            use_container_width=True,
+            hide_index=True,
+        )
+
+    with st.expander("ML audit and report", expanded=False):
+        st.json(audit)
+        report = artifacts.get("ml_report", "")
+        if report:
+            st.markdown(report)
+
+
+def _render_strategy_page(
+    bundle: ComprehensiveReportBundle | None,
+    error: str | None,
+    artifacts: dict[str, Any],
+) -> None:
+    _render_hero(
+        "Strategy Console",
+        "One question first: which strategy are we inspecting? Everything else stays folded until it matters.",
+    )
+    st.selectbox(
+        "Strategy",
+        options=["Current rule strategy", "ML style-neutral candidate"],
+        key="selected_strategy",
+        help="Switch between the current rejected-final rule strategy and the exploratory ML candidate.",
+    )
+    if st.session_state["selected_strategy"] == "ML style-neutral candidate":
+        _render_ml_strategy(artifacts)
+    else:
+        _render_current_rule_strategy(bundle, error, artifacts)
+
+
+def _render_run_page(config_obj: Any | None) -> None:
+    _render_hero(
+        "Run",
+        "Three visible actions: prepare the research stack, run the strict backtest, or refresh risk. Diagnostics are tucked away.",
+    )
+    if config_obj is None:
+        st.error("Load a valid configuration before running jobs.")
+        return
+
+    state = read_autopilot_state(config_obj)
+    active = autopilot_is_active(config_obj)
+    tone = {
+        "completed": "success",
+        "blocked": "warning",
+        "failed": "error",
+        "stopped": "warning",
+    }.get(state.status, "info")
+    st.markdown(
+        _status_pill(f"{state.status}: {state.stage}", tone),
+        unsafe_allow_html=True,
+    )
+    st.caption(state.message)
+
+    missing_artifacts, missing_credentials = _research_readiness(
+        config_obj,
+        st.session_state["backtest_start_date"],
+        st.session_state["backtest_end_date"],
+    )
+    research_ready = not missing_artifacts and not missing_credentials
+
+    with st.expander("Dates and readiness", expanded=False):
+        cols = st.columns(3)
+        cols[0].date_input("Research start", key="backtest_start_date")
+        cols[1].date_input("Research end", key="backtest_end_date")
+        cols[2].date_input("Risk date", key="risk_date")
+        _render_research_readiness(
+            config_obj,
+            st.session_state["backtest_start_date"],
+            st.session_state["backtest_end_date"],
+        )
+
+    actions = st.columns(3)
+    if actions[0].button(
+        "Run data + backtest",
+        type="primary",
+        use_container_width=True,
+        disabled=active,
+    ):
+        _run_cli_task(
+            "S&P 500 Research Backtest",
+            [
+                "autopilot-start",
+                "--config",
+                st.session_state["config_path"],
+                "--start",
+                str(st.session_state["backtest_start_date"]),
+                "--end",
+                str(st.session_state["backtest_end_date"]),
+                "--run-backtest",
+            ],
+        )
+    if actions[1].button(
+        "Run backtest only",
+        use_container_width=True,
+        disabled=not research_ready,
+    ):
+        _run_cli_task(
+            "Backtest",
+            [
+                "backtest",
+                "--config",
+                st.session_state["config_path"],
+                "--start",
+                str(st.session_state["backtest_start_date"]),
+                "--end",
+                str(st.session_state["backtest_end_date"]),
+            ],
+        )
+    if actions[2].button("Refresh risk", use_container_width=True):
+        _run_cli_task(
+            "Risk Monitor",
+            [
+                "risk-monitor",
+                "--config",
+                st.session_state["config_path"],
+                "--date",
+                str(st.session_state["risk_date"]),
+            ],
+        )
+
+    if active and st.button("Stop running job", use_container_width=True):
+        _run_cli_task(
+            "Stop Research Autopilot",
+            ["autopilot-stop", "--config", st.session_state["config_path"]],
+        )
+
+    with st.expander("Advanced diagnostic actions", expanded=False):
+        cols = st.columns(3)
+        if cols[0].button("Run monthly pipeline", use_container_width=True):
+            _run_cli_task(
+                "Monthly Pipeline",
+                [
+                    "run-monthly-pipeline",
+                    "--config",
+                    st.session_state["config_path"],
+                    "--date",
+                    str(st.session_state["pipeline_date"]),
+                    "--start",
+                    str(st.session_state["backtest_start_date"]),
+                ],
+            )
+        if cols[1].button("Refresh status", use_container_width=True):
+            st.cache_data.clear()
+            st.rerun()
+        if cols[2].button("Quickstart smoke test", use_container_width=True):
+            _run_cli_task("Quickstart Smoke Test", _quickstart_cli_args())
+        st.caption(
+            "Manual stage controls remain available in the legacy command deck code, but the main workflow should stay on the three actions above."
+        )
+
+    _render_last_run()
+
+
+def _render_data_page(artifacts: dict[str, Any]) -> None:
+    _render_hero(
+        "Data",
+        "A compact library of saved artifacts. Open a section only when you need the underlying tables.",
+    )
+    snapshot = pd.DataFrame(_artifact_snapshot(artifacts))
+    st.dataframe(
+        snapshot[["artifact", "updated", "size"]],
+        use_container_width=True,
+        hide_index=True,
+    )
+    section = st.selectbox(
+        "Inspect",
+        options=[
+            "Summary only",
+            "Portfolio",
+            "Factor lab",
+            "Universe",
+            "Risk",
+            "Macro and data quality",
+        ],
+        key="data_detail_section",
+        help="Details render only after you choose them.",
+    )
+    if section == "Portfolio":
+        _render_portfolio(artifacts)
+    elif section == "Factor lab":
+        _render_factor_lab(artifacts)
+    elif section == "Universe":
+        _render_universe(artifacts)
+    elif section == "Risk":
+        _render_risk(artifacts)
+    elif section == "Macro and data quality":
+        _render_macro_data(artifacts)
+
+
+def _render_settings_page(config_obj: Any | None) -> None:
+    _render_hero(
+        "Settings",
+        "Configuration is deliberately out of the way. Review the profile first, edit only when a research protocol calls for it.",
+    )
+    if config_obj is None:
+        st.error("The selected config entrypoint could not be parsed.")
+        return
+    st.json(
+        {
+            "config_entrypoint": st.session_state["config_path"],
+            "strategy": config_obj.strategy.name,
+            "benchmark": config_obj.strategy.benchmark,
+            "universe": config_obj.universe.name,
+            "optimizer": config_obj.optimizer.method,
+        }
+    )
+    with st.expander("Advanced configuration editor", expanded=False):
+        _render_configuration(config_obj)
+
+
 def _prepare_comprehensive_report() -> tuple[ComprehensiveReportBundle | None, str | None]:
     try:
         return ensure_comprehensive_report(REPORTS), None
@@ -2029,46 +2511,25 @@ def main() -> None:
     _render_sidebar(artifacts, config_error)
 
     pages = [
-        "Research Brief",
-        "Command Deck",
-        "Overview",
-        "Configuration",
-        "Universe",
-        "Factor Lab",
-        "Portfolio",
-        "Backtest",
-        "Risk",
-        "Macro & Data",
+        "Strategy",
+        "Run",
+        "Data",
+        "Settings",
     ]
+    if st.session_state.get("page") not in pages:
+        st.session_state["page"] = "Strategy"
     page = st.radio("Navigation", pages, horizontal=True, key="page", label_visibility="collapsed")
 
-    if page == "Research Brief":
-        _render_research_brief(comprehensive_bundle, comprehensive_error)
+    if page == "Strategy":
+        _render_strategy_page(comprehensive_bundle, comprehensive_error, artifacts)
         return
 
-    _render_hero(
-        "Research Workbench",
-        "Operate the monthly pipeline, backtest, and risk monitor from the front end, then inspect the resulting universe, factors, portfolio, and control outputs without switching surfaces.",
-    )
-
-    if page == "Command Deck":
-        _render_command_deck(config_obj)
-    elif page == "Overview":
-        _render_overview(artifacts)
-    elif page == "Configuration":
-        _render_configuration(config_obj)
-    elif page == "Universe":
-        _render_universe(artifacts)
-    elif page == "Factor Lab":
-        _render_factor_lab(artifacts)
-    elif page == "Portfolio":
-        _render_portfolio(artifacts)
-    elif page == "Backtest":
-        _render_backtest(artifacts, config_obj)
-    elif page == "Risk":
-        _render_risk(artifacts)
-    elif page == "Macro & Data":
-        _render_macro_data(artifacts)
+    if page == "Run":
+        _render_run_page(config_obj)
+    elif page == "Data":
+        _render_data_page(artifacts)
+    elif page == "Settings":
+        _render_settings_page(config_obj)
 
 
 if __name__ == "__main__":

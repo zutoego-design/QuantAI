@@ -1,0 +1,107 @@
+hypothesis: "A value plus low-risk LightGBM score neutralized against same-date style and sector exposures has positive forward out-of-sample residual investment value."
+study_id: "ml-value-low-risk-style-neutral-v2"
+research_stage: "confirmatory"
+study_status: "active"
+trial_family: "ml-value-low-risk-style-neutral-v2"
+trial_budget: 1
+require_clean_git: true
+factor_evidence_mode: "family_level"
+primary_hypothesis_family: "ml_value_low_risk_style_neutral"
+development_start: "2016-01-01"
+development_end: "2026-06-11"
+holdout_start: "2026-07-01"
+holdout_end: "2026-12-31"
+primary_metric: "sharpe_ratio"
+primary_metric_threshold: 0.0
+null_hypothesis: "The forward holdout Sharpe ratio of the preregistered ML style-neutral portfolio is not greater than zero."
+universe: "sp500_historical_standard"
+factors:
+  - book_to_market
+  - earnings_yield
+  - free_cash_flow_yield
+  - sales_yield
+  - beta_to_spy
+  - max_drawdown_252d
+  - realized_vol_252d
+  - realized_vol_60d
+hypothesis_families:
+  ml_value_low_risk_style_neutral:
+    family_id: "ml-value-low-risk-style-neutral-v2-primary"
+    trial_family: "ml-value-low-risk-style-neutral-v2"
+    trial_budget: 1
+    factors:
+      - book_to_market
+      - earnings_yield
+      - free_cash_flow_yield
+      - sales_yield
+      - beta_to_spy
+      - max_drawdown_252d
+      - realized_vol_252d
+      - realized_vol_60d
+    expected_direction: "The neutralized ML score should predict higher forward risk-adjusted portfolio returns after removing same-date sector and style score components."
+    score_orientation: "higher_style_neutral_score_is_better"
+    primary_metric: "sharpe_ratio"
+    decision_rule: "Evaluate the frozen ML portfolio as one family-level hypothesis; do not require each constituent factor to pass independent FDR after model fitting."
+forward_validation:
+  type: "forward_holdout"
+  holdout_start: "2026-07-01"
+  holdout_end: "2026-12-31"
+  inspection_policy: "One confirmatory inspection only; no tuning after the holdout is inspected."
+  alternative_if_data_unavailable: "Do not run confirmation until forward holdout prices and factor snapshots through 2026-12-31 are available."
+portfolio:
+  target_num_holdings: 25
+  max_weight: 0.05
+  max_sector_weight: 0.15
+  max_turnover_per_rebalance: 0.30
+costs:
+  commission_bps: 1.0
+  slippage_bps: 5.0
+  market_impact_coefficient: 0.10
+  max_adv_participation: 0.10
+model:
+  enabled: true
+  model_type: "lightgbm"
+  target: "cross_sectional_rank"
+  parameters:
+    n_estimators: 80
+    learning_rate: 0.03
+    num_leaves: 7
+    min_child_samples: 30
+    subsample: 0.9
+    colsample_bytree: 0.9
+    reg_alpha: 0.1
+    reg_lambda: 1.5
+    random_state: 42
+    verbosity: -1
+  portfolio_top_n: 25
+  transaction_cost_bps: 10.0
+  walk_forward:
+    train_periods: 60
+    min_train_periods: 12
+    test_periods: 3
+    step_periods: 3
+    rolling: true
+    purge: true
+    embargo_days: 5
+  score_neutralization:
+    enabled: true
+    method: "same_date_cross_sectional_residual"
+    include_sector_dummies: true
+    exposures:
+      - book_to_market
+      - earnings_yield
+      - free_cash_flow_yield
+      - sales_yield
+      - beta_to_spy
+      - realized_vol_252d
+      - realized_vol_60d
+    output_score: "style_neutral_score"
+robustness_tests:
+  - subperiod
+  - cost_sensitivity
+  - top_n_sensitivity
+  - rebalance_day_shift
+start_date: "2016-01-01"
+end_date: "2026-12-31"
+seed: 42
+max_years: 20

@@ -1,0 +1,111 @@
+status: superseded_by_executable_preregistration
+research_stage: confirmatory_draft
+study_id: ml-value-low-risk-style-neutral-v2
+study_status: active
+hypothesis: "A value plus low-risk LightGBM score, neutralized against same-date style and sector exposures, has positive out-of-sample residual investment value."
+source_development_report: reports/research/ml_strategy_development/strategy_development_report.md
+source_development_run: reports/runs/20260613T115415Z-backtest-01e41c77
+executable_preregistration: experiments/ml-value-low-risk-style-neutral-v2.yaml
+current_best_development_candidate: current_best__style_neutral_score__sector_cap_15
+
+completed_engineering_before_confirmatory_run:
+  - "Added official ExperimentSpec / orchestrator support for model.score_neutralization."
+  - "Persist neutralized holdout scores separately from raw model predictions."
+  - "Fail the confirmatory run if score_neutralization is specified but not applicable."
+remaining_preconditions_before_confirmatory_run:
+  - "Run only from a clean git commit."
+  - "Wait until the preregistered 2026-07-01 through 2026-12-31 forward holdout is available."
+
+universe: sp500_historical_standard
+factors:
+  - book_to_market
+  - earnings_yield
+  - free_cash_flow_yield
+  - sales_yield
+  - beta_to_spy
+  - max_drawdown_252d
+  - realized_vol_252d
+  - realized_vol_60d
+
+model:
+  enabled: true
+  model_type: lightgbm
+  target: cross_sectional_rank
+  parameters:
+    n_estimators: 80
+    learning_rate: 0.03
+    num_leaves: 7
+    min_child_samples: 30
+    subsample: 0.9
+    colsample_bytree: 0.9
+    reg_alpha: 0.1
+    reg_lambda: 1.5
+    random_state: 42
+    verbosity: -1
+  portfolio_top_n: 25
+  transaction_cost_bps: 10.0
+  walk_forward:
+    train_periods: 60
+    min_train_periods: 12
+    test_periods: 3
+    step_periods: 3
+    rolling: true
+    purge: true
+    embargo_days: 5
+  score_neutralization:
+    enabled: true
+    method: same_date_cross_sectional_residual
+    include_sector_dummies: true
+    exposures:
+      - book_to_market
+      - earnings_yield
+      - free_cash_flow_yield
+      - sales_yield
+      - beta_to_spy
+      - realized_vol_252d
+      - realized_vol_60d
+    output_score: style_neutral_score
+
+portfolio:
+  target_num_holdings: 25
+  max_weight: 0.05
+  max_sector_weight: 0.15
+  max_turnover_per_rebalance: 0.30
+
+costs:
+  commission_bps: 1.0
+  slippage_bps: 5.0
+  market_impact_coefficient: 0.10
+  max_adv_participation: 0.10
+
+protocol:
+  development_start: 2016-01-01
+  development_end: 2026-06-11
+  proposed_holdout_start: 2026-07-01
+  proposed_holdout_end: 2026-12-31
+  trial_family: ml-value-low-risk-style-neutral-v2
+  trial_budget: 1
+  require_clean_git: true
+  primary_metric: sharpe_ratio
+  primary_metric_threshold: 0.0
+  unchanged_confirmatory_gates:
+    bootstrap_confidence_level: 0.95
+    deflated_sharpe_probability_threshold: 0.95
+    fdr_alpha: 0.05
+    require_style_regression: true
+
+development_evidence:
+  daily_sharpe: 1.041330
+  net_total_return: 1.539127
+  max_drawdown: -0.237176
+  beta: 0.972100
+  ff_alpha_annualized: 0.040474
+  ff_alpha_t_stat: 1.331801
+  deflated_sharpe_probability_with_70_trials: 0.503751
+  passes_confirmatory_gate_in_development: false
+
+audit_notes:
+  - "Do not reuse the closed v1 holdout as confirmation."
+  - "This draft freezes the candidate but is not an official confirmatory result."
+  - "The score neutralization uses only same-date factor exposures and sector metadata."
+  - "The current date is 2026-06-16; proposed forward holdout data is not yet available."

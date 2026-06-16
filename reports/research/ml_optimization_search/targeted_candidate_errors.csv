@@ -1,0 +1,3 @@
+spec,error
+"('value_low_risk', 'lgbm_ranker', 'cross_sectional_rank', 30, True, 36, 0)","LightGBMError('label should be int type (met 0.453069) for ranking task,\nfor the gain of label, please set the label_gain parameter')"
+"('value_low_risk_sales', 'lgbm_ranker', 'cross_sectional_rank', 30, True, 36, 0)","LightGBMError('label should be int type (met 0.453069) for ranking task,\nfor the gain of label, please set the label_gain parameter')"

@@ -6,7 +6,10 @@ import pytest
 from qss.backtest.metrics import comprehensive_factor_diagnostics
 from qss.config.loader import get_config
 from qss.data.validation import failed_check_summary
-from qss.research.orchestrator import ExperimentSpec
+from qss.research.orchestrator import (
+    ExperimentSpec,
+    _apply_model_score_neutralization,
+)
 from qss.runs.manifest import create_run_context
 
 
@@ -51,6 +54,72 @@ def test_experiment_overrides_are_bounded():
     assert list(updated.factor_groups["quality"].factors) == ["roe"]
     assert updated.optimizer.constraints.target_num_holdings == 25
     assert updated.backtest.transaction_cost.commission_bps == 2.0
+
+
+def test_model_score_neutralization_override_is_bounded():
+    config = get_config(["configs/default.yaml"])
+    spec = ExperimentSpec(
+        hypothesis="style neutral model",
+        factors=["beta_to_spy"],
+        model={
+            "enabled": True,
+            "score_neutralization": {
+                "enabled": True,
+                "exposures": ["beta_to_spy"],
+                "include_sector_dummies": False,
+            },
+        },
+        start_date="2020-01-01",
+        end_date="2025-01-01",
+    )
+    from qss.research.orchestrator import ResearchOrchestrator
+
+    updated = ResearchOrchestrator(config)._configured_experiment(spec)
+
+    assert updated.ml.enabled is True
+
+
+def test_apply_model_score_neutralization_residualizes_total_score():
+    date = pd.Timestamp("2025-01-31")
+    model_scores = pd.DataFrame(
+        {
+            "date": [date] * 4,
+            "symbol": ["A", "B", "C", "D"],
+            "total_score": [2.0, 1.0, -1.0, -2.0],
+            "sector": ["Tech", "Tech", "Health", "Health"],
+            "market_cap": 1_000_000.0,
+        }
+    )
+    factors = pd.DataFrame(
+        {
+            "date": [date] * 4,
+            "symbol": ["A", "B", "C", "D"],
+            "factor_name": ["beta_to_spy"] * 4,
+            "processed_value": [2.0, 1.0, -1.0, -2.0],
+            "sector": ["Tech", "Tech", "Health", "Health"],
+            "market_cap": 1_000_000.0,
+        }
+    )
+    spec = ExperimentSpec(
+        hypothesis="style neutral model",
+        factors=["beta_to_spy"],
+        model={
+            "enabled": True,
+            "score_neutralization": {
+                "enabled": True,
+                "exposures": ["beta_to_spy"],
+                "include_sector_dummies": False,
+            },
+        },
+        start_date="2020-01-01",
+        end_date="2025-01-01",
+    )
+
+    neutralized, report = _apply_model_score_neutralization(model_scores, factors, spec)
+
+    assert report["applied"] is True
+    assert neutralized["total_score"].abs().max() < 1e-10
+    assert "style_neutral_score" in neutralized.columns
 
 
 def test_factor_diagnostics_include_ic_quantiles_decay_and_correlation():

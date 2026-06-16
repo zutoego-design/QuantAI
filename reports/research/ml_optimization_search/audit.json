@@ -1,0 +1,27 @@
+{
+  "generated_at": "2026-06-16T12:28:20.804713+00:00",
+  "source_run": "20260613T115415Z-backtest-01e41c77",
+  "search_candidates": 59,
+  "validation_conditions_changed": false,
+  "official_confirmatory_claim": false,
+  "uses_closed_v1_holdout_as_confirmation": false,
+  "best_candidate_id": "value_low_risk__lgbm_steady__cross_sectional_rank__top25__roll60__blend0.0",
+  "best_net_sharpe": 1.179579524550161,
+  "best_net_total_return": 2.0006861936782263,
+  "best_shadow_trial1_deflated_probability": 0.9968504598745587,
+  "best_search_adjusted_deflated_probability": 0.6364299269739631,
+  "best_search_adjusted_trial_count": 59.0,
+  "label_gap_check": {
+    "passed": true,
+    "rule": "max train label_end_time < test_start - embargo_days for every fold"
+  },
+  "purge_embargo": {
+    "purge": true,
+    "embargo_days": 5
+  },
+  "known_limits": [
+    "Development walk-forward search, not official confirmatory evidence.",
+    "Confirmatory clean-git guard remains unchanged.",
+    "Fresh v2 forward holdout starts 2026-07-01 and is not available on 2026-06-16."
+  ]
+}

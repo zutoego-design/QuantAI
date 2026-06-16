@@ -197,6 +197,8 @@ class RunManifest:
     spec_hash: str | None = None
     data_snapshot_id: str | None = None
     trial_number: int | None = None
+    study_status: str | None = None
+    trial_budget: int | None = None
     evidence_status: str | None = None
 
 
@@ -221,6 +223,8 @@ class RunContext:
         spec_hash: str | None = None,
         data_snapshot_id: str | None = None,
         trial_number: int | None = None,
+        study_status: str | None = None,
+        trial_budget: int | None = None,
         evidence_status: str | None = None,
     ) -> None:
         if status is not None:
@@ -239,6 +243,10 @@ class RunContext:
             self.manifest.data_snapshot_id = data_snapshot_id
         if trial_number is not None:
             self.manifest.trial_number = trial_number
+        if study_status is not None:
+            self.manifest.study_status = study_status
+        if trial_budget is not None:
+            self.manifest.trial_budget = trial_budget
         if evidence_status is not None:
             self.manifest.evidence_status = evidence_status
         self.write_manifest()

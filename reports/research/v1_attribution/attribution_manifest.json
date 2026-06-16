@@ -1,0 +1,22 @@
+{
+  "source_run_id": "20260615T132128Z-experiment-346a7b28",
+  "source_run_path": "D:\\QuantAI\\reports\\runs\\20260615T132128Z-experiment-346a7b28",
+  "generated_at": "2026-06-15T14:04:02.495428+00:00",
+  "model": "rule_score",
+  "outputs": [
+    "attribution_manifest.json",
+    "attribution_report.md",
+    "beta_bucket_attribution.csv",
+    "beta_bucket_summary.csv",
+    "fama_french_contribution.csv",
+    "fama_french_summary.csv",
+    "residual_alpha_stability.csv",
+    "residual_alpha_stability.json",
+    "sector_attribution.csv",
+    "sector_summary.csv",
+    "value_bucket_summary.csv",
+    "value_exposure_attribution.csv",
+    "volatility_bucket_attribution.csv",
+    "volatility_bucket_summary.csv"
+  ]
+}

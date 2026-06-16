@@ -1,0 +1,16 @@
+[
+  {
+    "name": "forward_return",
+    "horizon_days": 21,
+    "start_offset_days": 0,
+    "embargo_days": 5,
+    "version": "v1"
+  },
+  {
+    "name": "cross_sectional_rank",
+    "horizon_days": 21,
+    "start_offset_days": 0,
+    "embargo_days": 5,
+    "version": "v1"
+  }
+]

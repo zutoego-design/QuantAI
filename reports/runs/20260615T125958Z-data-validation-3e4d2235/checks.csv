@@ -1,0 +1,23 @@
+check,passed,value,severity,detail
+prices_nonempty,True,1835397,error,
+fundamentals_nonempty,True,726711,error,
+membership_nonempty,True,63158,error,
+macro_nonempty,True,20785,error,
+macro_vintage_history,False,unavailable,warning,Use ALFRED or another revision-aware source for confirmatory macro research.
+corporate_action_ledger,False,data\silver\corporate_actions\corporate_actions.parquet,warning,"Independent split, dividend, merger, spin-off, and exchange terms are required."
+exact_delisting_returns,False,data\silver\corporate_actions\delisting_returns.parquet,warning,Scenario sensitivity is not a substitute for observed terminal cash flows.
+stable_security_identifier_coverage,True,1.0,warning,
+sector_mapping_coverage,True,0.9767441860465116,error,
+monthly_membership_history,True,1.0,error,41/41 months; missing none
+synthetic_rows_zero,True,0,error,
+fundamental_available_dates,True,0,error,
+price_data_cutoff,False,2026-06-11,error,requested=2026-06-12; expected_session=2026-06-12
+primary_benchmark_present,True,^GSPC,error,
+primary_benchmark_complete,True,0,error,
+secondary_benchmark_present,True,SPY,error,
+secondary_benchmark_complete,True,0,error,
+sp500_source_audit,True,sp500_wikipedia,error,
+authorized_constituent_history,False,sp500_wikipedia,warning,Wikipedia reconstruction is not a licensed constituent master.
+cross_source_validation_enabled,False,disabled,warning,Configure a second provider before institutional use.
+credential_sec_user_agent,True,True,error,
+sec_text_history_coverage,False,0.014687738675753481,warning,target=80%; eligible_filings=34042

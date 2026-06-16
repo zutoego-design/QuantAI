@@ -1,0 +1,8 @@
+{
+  "evaluation_scope": "holdout",
+  "holdout_start": "2024-08-01",
+  "holdout_end": "2025-12-31",
+  "factor_date_min": "2024-08-30",
+  "factor_date_max": "2025-12-31",
+  "price_date_max": "2025-12-31"
+}

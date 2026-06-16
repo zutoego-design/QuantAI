@@ -1,0 +1,238 @@
+{
+  "schema_version": "1.0",
+  "generated_at": "2026-06-15T14:04:27.779196+00:00",
+  "left_report": "20260615T132128Z-experiment-346a7b28",
+  "right_report": "20260615T132128Z-experiment-346a7b28",
+  "identity": {
+    "source_run_id": {
+      "left": "20260615T132128Z-experiment-346a7b28",
+      "right": "20260615T132128Z-experiment-346a7b28",
+      "changed": false
+    },
+    "data_snapshot_id": {
+      "left": "5035725ce92855813f87f3b2a8c51a655c2f9badc5054326dc0a4099c2d9ac4d",
+      "right": "5035725ce92855813f87f3b2a8c51a655c2f9badc5054326dc0a4099c2d9ac4d",
+      "changed": false
+    },
+    "spec_hash": {
+      "left": "4c385ec2d158a4a4259594f962d8bdd03820ad552703bda0d23daa33aeb4a637",
+      "right": "4c385ec2d158a4a4259594f962d8bdd03820ad552703bda0d23daa33aeb4a637",
+      "changed": false
+    },
+    "evidence_status": {
+      "left": "rejected",
+      "right": "rejected_final",
+      "changed": true
+    },
+    "trial_number": {
+      "left": 5,
+      "right": 5,
+      "changed": false
+    },
+    "trial_budget": {
+      "left": null,
+      "right": 5,
+      "changed": true
+    },
+    "holdout_inspection_count": {
+      "left": null,
+      "right": 5.0,
+      "changed": true
+    }
+  },
+  "protocol": {
+    "study_id": {
+      "left": "multifactor-rule-confirmatory-v1",
+      "right": "multifactor-rule-confirmatory-v1",
+      "changed": false
+    },
+    "stage": {
+      "left": "confirmatory",
+      "right": "confirmatory",
+      "changed": false
+    },
+    "study_status": {
+      "left": null,
+      "right": "rejected_final",
+      "changed": true
+    },
+    "holdout_start": {
+      "left": "2024-08-01",
+      "right": "2024-08-01",
+      "changed": false
+    },
+    "holdout_end": {
+      "left": "2025-12-31",
+      "right": "2025-12-31",
+      "changed": false
+    },
+    "trial_family": {
+      "left": "multifactor-rule-confirmatory",
+      "right": "multifactor-rule-confirmatory",
+      "changed": false
+    },
+    "trial_budget": {
+      "left": null,
+      "right": 5,
+      "changed": true
+    }
+  },
+  "metrics": [
+    {
+      "metric": "alpha_annualized",
+      "left": 0.0963617140215604,
+      "right": 0.0963617140215604,
+      "delta": 0.0
+    },
+    {
+      "metric": "annualized_volatility",
+      "left": 0.151572874023515,
+      "right": 0.151572874023515,
+      "delta": 0.0
+    },
+    {
+      "metric": "average_number_of_holdings",
+      "left": 50.0,
+      "right": 50.0,
+      "delta": 0.0
+    },
+    {
+      "metric": "average_turnover",
+      "left": 0.1026951849293485,
+      "right": 0.1026951849293485,
+      "delta": 0.0
+    },
+    {
+      "metric": "benchmark_total_return",
+      "left": 0.2396103511419893,
+      "right": 0.2396103511419893,
+      "delta": 0.0
+    },
+    {
+      "metric": "beta",
+      "left": 0.7213458289209752,
+      "right": 0.7213458289209752,
+      "delta": 0.0
+    },
+    {
+      "metric": "cagr",
+      "left": 0.2282011908797245,
+      "right": 0.2282011908797245,
+      "delta": 0.0
+    },
+    {
+      "metric": "calmar_ratio",
+      "left": 1.6463986264606798,
+      "right": 1.6463986264606798,
+      "delta": 0.0
+    },
+    {
+      "metric": "correlation",
+      "left": 0.8334222582777072,
+      "right": 0.8334222582777072,
+      "delta": 0.0
+    },
+    {
+      "metric": "cost_drag",
+      "left": 0.0019479106866653,
+      "right": 0.0019479106866653,
+      "delta": 0.0
+    },
+    {
+      "metric": "cvar_95_daily",
+      "left": -0.0204010388739404,
+      "right": -0.0204010388739404,
+      "delta": 0.0
+    },
+    {
+      "metric": "down_capture",
+      "left": 0.7011096260925874,
+      "right": 0.7011096260925874,
+      "delta": 0.0
+    },
+    {
+      "metric": "downside_volatility",
+      "left": 0.0989598401484347,
+      "right": 0.0989598401484347,
+      "delta": 0.0
+    },
+    {
+      "metric": "gross_total_return",
+      "left": 0.3388847822907253,
+      "right": 0.3388847822907253,
+      "delta": 0.0
+    },
+    {
+      "metric": "information_ratio",
+      "left": 0.5129913988774567,
+      "right": 0.5129913988774567,
+      "delta": 0.0
+    },
+    {
+      "metric": "max_adv_participation",
+      "left": 0.000591245639963,
+      "right": 0.000591245639963,
+      "delta": 0.0
+    },
+    {
+      "metric": "max_drawdown",
+      "left": -0.1386062811351444,
+      "right": -0.1386062811351444,
+      "delta": 0.0
+    },
+    {
+      "metric": "net_total_return",
+      "left": 0.3369368716040599,
+      "right": 0.3369368716040599,
+      "delta": 0.0
+    },
+    {
+      "metric": "omega_ratio",
+      "left": 1.3143237306994962,
+      "right": 1.3143237306994962,
+      "delta": 0.0
+    },
+    {
+      "metric": "r_squared",
+      "left": 0.6945926605927133,
+      "right": 0.6945926605927133,
+      "delta": 0.0
+    },
+    {
+      "metric": "sharpe_ratio",
+      "left": 1.4321458513102243,
+      "right": 1.4321458513102243,
+      "delta": 0.0
+    },
+    {
+      "metric": "sortino_ratio",
+      "left": 2.193561169645621,
+      "right": 2.193561169645621,
+      "delta": 0.0
+    },
+    {
+      "metric": "total_return",
+      "left": 0.3369368716040599,
+      "right": 0.3369368716040599,
+      "delta": 0.0
+    },
+    {
+      "metric": "tracking_error",
+      "left": 0.0969424976448855,
+      "right": 0.0969424976448855,
+      "delta": 0.0
+    },
+    {
+      "metric": "up_capture",
+      "left": 0.8031556468221306,
+      "right": 0.8031556468221306,
+      "delta": 0.0
+    },
+    {
+      "metric": "var_95_daily",
+      "left": -0.0133472574926483,
+      "right": -0.0133472574926483,
+      "delta": 0.0
+    }
+  ]
+}

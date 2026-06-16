@@ -105,3 +105,35 @@ def test_operational_optimizer_enforces_exact_target_count():
         result.weights.groupby("sector")["target_weight"].sum().max()
         <= config.constraints.max_sector_weight + 1e-6
     )
+
+
+def test_exact_target_count_runs_after_sparse_broad_fallback():
+    config = get_config(["configs/default.yaml"]).optimizer
+    config.constraints.target_num_holdings = 100
+    scores = _sample_scores(100)
+    covariance = pd.DataFrame(
+        np.eye(len(scores)) * 0.0001,
+        index=scores["symbol"],
+        columns=scores["symbol"],
+    )
+
+    broad = optimize_portfolio_with_status(
+        scores=scores,
+        covariance=covariance,
+        previous_weights=pd.Series(dtype=float),
+        sector_map=scores.set_index("symbol")["sector"],
+        config=config,
+    )
+    result = optimize_portfolio_to_target_count(
+        scores=scores,
+        covariance=covariance,
+        previous_weights=pd.Series(dtype=float),
+        sector_map=scores.set_index("symbol")["sector"],
+        config=config,
+    )
+
+    assert broad.status == "fallback"
+    assert len(broad.weights) < config.constraints.target_num_holdings
+    assert result.status != "fallback"
+    assert len(result.weights) == config.constraints.target_num_holdings
+    assert result.weights["target_weight"].min() > 0

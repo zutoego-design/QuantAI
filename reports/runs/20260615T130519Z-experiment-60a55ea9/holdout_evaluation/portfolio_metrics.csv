@@ -1,0 +1,2 @@
+model_type,evaluation_scope,net_total_return,net_sharpe,cagr,max_drawdown,average_turnover
+rule_score,holdout,0.33693687160405994,1.4321458513102243,0.22820119087972457,-0.1386062811351444,0.10269518492934859

@@ -1,0 +1,24 @@
+{
+  "status": "rejected_final",
+  "study_status": "rejected_final",
+  "finalized_at": "2026-06-15",
+  "final_decision_run_id": "20260615T132128Z-experiment-346a7b28",
+  "postmortem": "v1_rejection_postmortem.md",
+  "trial_budget": 5,
+  "holdout_reuse_policy": "do_not_reuse_for_v1_tuning_or_confirmatory_reruns",
+  "stage": "confirmatory",
+  "primary_metric": "sharpe_ratio",
+  "threshold": 0.0,
+  "primary_metric_one_sided_lower_95": 0.3069989907529136,
+  "deflated_sharpe_probability": 0.6953966205445457,
+  "required_deflated_sharpe_probability": 0.95,
+  "net_total_return": 0.33693687160405994,
+  "blocking_issues": [
+    "Preregistered factor evidence did not survive direction and FDR checks: ['accruals', 'beta_to_spy', 'book_to_market', 'earnings_yield', 'free_cash_flow_yield', 'max_drawdown_252d', 'momentum_12_1', 'momentum_3m', 'momentum_6m', 'realized_vol_252d', 'realized_vol_60d', 'roe', 'sales_yield']."
+  ],
+  "reasons": [
+    "The Deflated Sharpe probability is below the required threshold.",
+    "Methodology blockers remain unresolved."
+  ],
+  "selected_model": "rule_score"
+}

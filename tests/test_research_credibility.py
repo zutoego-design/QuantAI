@@ -4,10 +4,12 @@ import numpy as np
 import pandas as pd
 import pytest
 
+from qss.acceptance import _required_robustness_blockers
 from qss.config.loader import get_config
 from qss.experiments.registry import ExperimentRegistry
 from qss.ingestion.fama_french import _parse_daily_factors
 from qss.research.decision import research_evidence_decision
+from qss.research.governance import confirmatory_rerun_guard, holdout_reuse_detector
 from qss.research.orchestrator import (
     ExperimentSpec,
     _config_diff,
@@ -191,6 +193,76 @@ def test_registry_tracks_trials_and_snapshot_identity(tmp_path):
     assert registry.trial_count("family-a") == 2
 
 
+def test_confirmatory_guard_blocks_closed_study_and_holdout_reuse():
+    protocol = ResearchProtocol(
+        study_id="study-a",
+        stage="confirmatory",
+        study_status="rejected_final",
+        development_start="2024-01-01",
+        development_end="2024-03-29",
+        holdout_start="2024-05-06",
+        holdout_end="2024-12-31",
+        trial_family="family-a",
+    )
+    with pytest.raises(ValueError, match="rejected_final"):
+        confirmatory_rerun_guard(protocol, trial_number=1)
+
+    active = protocol.model_copy(update={"study_id": "study-b", "study_status": "active"})
+    closures = [
+        {
+            "study_id": "study-a",
+            "trial_family": "family-a",
+            "study_status": "rejected_final",
+            "holdout_start": "2024-05-06",
+            "holdout_end": "2024-12-31",
+            "final_run_id": "run-final",
+        }
+    ]
+    violations = holdout_reuse_detector(active, closures)
+    assert violations[0]["reason"] == "closed_holdout_reuse"
+    with pytest.raises(ValueError, match="holdout reuse"):
+        confirmatory_rerun_guard(active, trial_number=1, closures=closures)
+
+
+def test_confirmatory_guard_hard_fails_trial_budget():
+    protocol = ResearchProtocol(
+        study_id="study-budget",
+        stage="confirmatory",
+        development_start="2024-01-01",
+        development_end="2024-03-29",
+        holdout_start="2024-05-06",
+        holdout_end="2024-12-31",
+        trial_family="family-budget",
+        trial_budget=2,
+    )
+    with pytest.raises(ValueError, match="Trial budget exceeded"):
+        confirmatory_rerun_guard(protocol, trial_number=3)
+
+
+def test_confirmatory_guard_requires_clean_git_when_requested():
+    protocol = ResearchProtocol(
+        study_id="study-clean",
+        stage="confirmatory",
+        clean_git_required=True,
+        development_start="2024-01-01",
+        development_end="2024-03-29",
+        holdout_start="2024-05-06",
+        holdout_end="2024-12-31",
+        trial_family="family-clean",
+    )
+    with pytest.raises(ValueError, match="clean git workspace"):
+        confirmatory_rerun_guard(
+            protocol,
+            trial_number=1,
+            identity={"dirty": True, "version": "git:abc:dirty:def"},
+        )
+    confirmatory_rerun_guard(
+        protocol,
+        trial_number=1,
+        identity={"dirty": False, "version": "git:abc:clean"},
+    )
+
+
 def test_hac_fdr_bootstrap_and_deflated_sharpe_are_deterministic():
     rng = np.random.default_rng(7)
     values = pd.Series(rng.normal(0.002, 0.01, size=240))
@@ -356,6 +428,22 @@ def test_top_n_robustness_diff_only_changes_target_count():
     assert set(_config_diff(base, variant)) == {
         "optimizer.constraints.target_num_holdings"
     }
+
+
+def test_acceptance_recomputes_invalid_robustness_blocker():
+    robustness = pd.DataFrame(
+        [
+            {"test": "subperiod", "setting": "first_half", "status": "valid"},
+            {"test": "cost_sensitivity", "setting": "5_bps", "status": "valid"},
+            {"test": "top_n_sensitivity", "setting": "100", "status": "invalid"},
+            {"test": "rebalance_day_shift", "setting": "5", "status": "valid"},
+        ]
+    )
+
+    assert _required_robustness_blockers(robustness) == [
+        "Required robustness tests are invalid: "
+        "[{'test': 'top_n_sensitivity', 'setting': '100'}]."
+    ]
 
 
 def test_research_decision_separates_artifacts_from_evidence():

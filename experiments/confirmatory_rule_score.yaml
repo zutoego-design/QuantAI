@@ -1,7 +1,9 @@
 hypothesis: "The preregistered multifactor rule score has positive out-of-sample risk-adjusted value."
 study_id: "multifactor-rule-confirmatory-v1"
 research_stage: "confirmatory"
+study_status: "rejected_final"
 trial_family: "multifactor-rule-confirmatory"
+trial_budget: 5
 development_start: "2024-01-02"
 development_end: "2024-06-28"
 holdout_start: "2024-08-01"

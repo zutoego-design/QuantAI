@@ -5,7 +5,7 @@ import pytest
 
 from qss.approval.workflow import create_approval_packet, transition_approval
 from qss.config.loader import get_config
-from qss.experiments.registry import ExperimentRegistry
+from qss.experiments.registry import ExperimentRegistry, register_run_path
 from qss.factors.metadata import configured_factor_metadata
 from qss.research.audit import build_bias_review, write_bias_review
 
@@ -41,6 +41,32 @@ def test_registry_is_queryable_without_folder_scanning(tmp_path):
     )
     result = registry.query(model_type="ridge")
     assert list(result["run_id"]) == ["run-1"]
+
+
+def test_register_run_path_handles_null_research_protocol(tmp_path):
+    config = get_config(["configs/default.yaml"])
+    config.registry.path = str(tmp_path / "registry.duckdb")
+    run = tmp_path / "runs" / "run-null-protocol"
+    run.mkdir(parents=True)
+    (run / "manifest.json").write_text(
+        json.dumps(
+            {
+                "run_id": "run-null-protocol",
+                "run_type": "backtest",
+                "status": "valid",
+                "created_at": "2026-01-01T00:00:00+00:00",
+                "config_hash": "abc",
+                "research_protocol": None,
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    assert register_run_path(config, run)
+    assert (
+        ExperimentRegistry(config.registry.path).query().iloc[0]["run_id"]
+        == "run-null-protocol"
+    )
 
 
 def test_approval_requires_human_transition_and_exports_only_after_approval(tmp_path):

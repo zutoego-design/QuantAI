@@ -1,0 +1,17 @@
+check,passed,details
+research_identity_frozen,True,code=git:fde60533f218c73a15874bd47000f5eae5025f0c:dirty:28886f33220009f6d80acb0fb9c8827a42d3a87141093873463c30f941b6f965; environment=57d09f6e5fa406d1a10bd8fc35ee099ec935d8c88195e1002f6dec4e06a45eff
+confirmatory_artifacts_complete,True,[]
+source_run_valid,True,valid
+preregistered_protocol_identity,True,stage=confirmatory
+holdout_label_gap,True,business_days=23
+data_snapshot_identity,True,5035725ce92855813f87f3b2a8c51a655c2f9badc5054326dc0a4099c2d9ac4d
+complete_research_snapshot,True,files=7
+factor_evidence_holdout_scope,True,factors=2024-08-30..2025-12-31; prices_through=2025-12-31
+child_run_identity,True,children=8
+robustness_config_diffs,True,rows=12
+shared_holdout_ledger_complete,True,[]
+bootstrap_reproducible,True,samples=2000
+deflated_sharpe_reproducible,True,trials=5
+style_regression_reproducible,True,coverage=1.0
+factor_evidence_reproducible,True,factors=13
+research_decision_reproducible,True,rejected

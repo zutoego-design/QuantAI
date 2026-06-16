@@ -1,0 +1,17 @@
+{
+  "closures": [
+    {
+      "study_id": "multifactor-rule-confirmatory-v1",
+      "trial_family": "multifactor-rule-confirmatory",
+      "study_status": "rejected_final",
+      "final_run_id": "20260615T132128Z-experiment-346a7b28",
+      "holdout_start": "2024-08-01",
+      "holdout_end": "2025-12-31",
+      "data_snapshot_id": "5035725ce92855813f87f3b2a8c51a655c2f9badc5054326dc0a4099c2d9ac4d",
+      "trial_count": 5,
+      "trial_budget": 5,
+      "closed_at": "2026-06-15",
+      "reason": "Final confirmatory v1 evidence was rejected; this holdout is no longer eligible for v1 tuning or confirmatory reruns."
+    }
+  ]
+}

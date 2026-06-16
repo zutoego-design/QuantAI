@@ -34,10 +34,12 @@ CREATE TABLE IF NOT EXISTS experiments (
     study_id VARCHAR,
     research_stage VARCHAR,
     trial_family VARCHAR,
+    study_status VARCHAR,
     protocol_json VARCHAR,
     spec_hash VARCHAR,
     data_snapshot_id VARCHAR,
     trial_number INTEGER,
+    trial_budget INTEGER,
     evidence_status VARCHAR,
     evaluation_scope VARCHAR,
     run_path VARCHAR NOT NULL,
@@ -49,10 +51,12 @@ REGISTRY_ADDITIONS = {
     "study_id": "VARCHAR",
     "research_stage": "VARCHAR",
     "trial_family": "VARCHAR",
+    "study_status": "VARCHAR",
     "protocol_json": "VARCHAR",
     "spec_hash": "VARCHAR",
     "data_snapshot_id": "VARCHAR",
     "trial_number": "INTEGER",
+    "trial_budget": "INTEGER",
     "evidence_status": "VARCHAR",
     "evaluation_scope": "VARCHAR",
 }
@@ -122,10 +126,12 @@ class ExperimentRegistry:
             "study_id",
             "research_stage",
             "trial_family",
+            "study_status",
             "protocol_json",
             "spec_hash",
             "data_snapshot_id",
             "trial_number",
+            "trial_budget",
             "evidence_status",
             "evaluation_scope",
             "run_path",
@@ -238,6 +244,8 @@ def registry_record_from_run(
     spec_hash: str | None = None,
     data_snapshot_id: str | None = None,
     trial_number: int | None = None,
+    study_status: str | None = None,
+    trial_budget: int | None = None,
     evidence_status: str | None = None,
     evaluation_scope: str | None = None,
 ) -> dict[str, Any]:
@@ -276,6 +284,9 @@ def registry_record_from_run(
         "study_id": (research_protocol or {}).get("study_id"),
         "research_stage": (research_protocol or {}).get("stage"),
         "trial_family": (research_protocol or {}).get("trial_family"),
+        "study_status": study_status
+        if study_status is not None
+        else (research_protocol or {}).get("study_status"),
         "protocol_json": (
             json.dumps(research_protocol, sort_keys=True)
             if research_protocol is not None
@@ -284,6 +295,9 @@ def registry_record_from_run(
         "spec_hash": spec_hash,
         "data_snapshot_id": data_snapshot_id,
         "trial_number": trial_number,
+        "trial_budget": trial_budget
+        if trial_budget is not None
+        else (research_protocol or {}).get("trial_budget"),
         "evidence_status": evidence_status,
         "evaluation_scope": evaluation_scope,
         "run_path": str(Path(run_path).resolve()),
@@ -300,6 +314,7 @@ def register_run_path(config: AppConfig, run_path: str | Path) -> bool:
         manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
     except (OSError, ValueError, json.JSONDecodeError):
         return False
+    research_protocol = manifest.get("research_protocol") or {}
     metrics_path = run_root / "metrics.csv"
     metrics = pd.read_csv(metrics_path) if metrics_path.exists() else None
     approval_path = run_root / "approval_packet.json"
@@ -329,15 +344,16 @@ def register_run_path(config: AppConfig, run_path: str | Path) -> bool:
             end_date=manifest.get("data_cutoff"),
             metrics=metrics,
             approval_status=approval_status,
-            research_protocol=manifest.get("research_protocol"),
+            research_protocol=research_protocol,
             spec_hash=manifest.get("spec_hash"),
             data_snapshot_id=manifest.get("data_snapshot_id"),
             trial_number=manifest.get("trial_number"),
+            study_status=manifest.get("study_status"),
+            trial_budget=manifest.get("trial_budget"),
             evidence_status=manifest.get("evidence_status"),
             evaluation_scope=(
                 "holdout"
-                if manifest.get("research_protocol", {}).get("stage")
-                == "confirmatory"
+                if research_protocol.get("stage") == "confirmatory"
                 else "full_sample"
             ),
         )

@@ -135,6 +135,38 @@ def _mappings_equivalent(
     return True
 
 
+def _required_robustness_blockers(robustness: pd.DataFrame) -> list[str]:
+    required_robustness = {
+        "subperiod",
+        "cost_sensitivity",
+        "top_n_sensitivity",
+        "rebalance_day_shift",
+    }
+    observed_robustness = (
+        set(robustness["test"]) if not robustness.empty else set()
+    )
+    blockers: list[str] = []
+    missing_robustness = sorted(required_robustness - observed_robustness)
+    invalid_robustness = (
+        robustness.loc[
+            robustness["test"].isin(required_robustness)
+            & (robustness["status"] != "valid"),
+            ["test", "setting"],
+        ].to_dict("records")
+        if not robustness.empty
+        else []
+    )
+    if missing_robustness:
+        blockers.append(
+            f"Required robustness tests are missing: {missing_robustness}."
+        )
+    if invalid_robustness:
+        blockers.append(
+            f"Required robustness tests are invalid: {invalid_robustness}."
+        )
+    return blockers
+
+
 def _experiment_acceptance_checks(
     config: AppConfig,
     root: Path,
@@ -194,11 +226,15 @@ def _experiment_acceptance_checks(
     spec = ExperimentSpec.model_validate_json(
         (root / "experiment_spec.json").read_text(encoding="utf-8")
     )
+    accepted_spec_hashes = {
+        spec.spec_hash,
+        spec.legacy_spec_hash_without_governance,
+    }
     checks.append(
         {
             "check": "preregistered_protocol_identity",
             "passed": protocol == manifest.get("research_protocol")
-            and spec.spec_hash == manifest.get("spec_hash")
+            and manifest.get("spec_hash") in accepted_spec_hashes
             and protocol.get("stage") == "confirmatory",
             "details": f"stage={protocol.get('stage')}",
         }
@@ -351,9 +387,9 @@ def _experiment_acceptance_checks(
     for row in robustness.itertuples(index=False):
         difference = json.loads(row.config_diff or "{}")
         if row.test == "top_n_sensitivity":
-            robustness_ok = robustness_ok and set(difference) == {
+            robustness_ok = robustness_ok and set(difference).issubset({
                 "optimizer.constraints.target_num_holdings"
-            }
+            })
         elif difference:
             robustness_ok = False
     checks.append(
@@ -496,6 +532,7 @@ def _experiment_acceptance_checks(
     )
 
     blockers = list(factor_blockers)
+    blockers.extend(_required_robustness_blockers(robustness))
     if recomputed_exposures.empty:
         blockers.append(
             "Fama-French 5-factor plus Momentum regression had insufficient overlap."

@@ -1,0 +1,108 @@
+hypothesis: "Family-level multifactor scores have positive forward out-of-sample risk-adjusted value."
+study_id: "multifactor-rule-confirmatory-v2"
+research_stage: "confirmatory"
+study_status: "active"
+trial_family: "multifactor-rule-confirmatory-v2"
+trial_budget: 2
+require_clean_git: true
+factor_evidence_mode: "family_level"
+primary_hypothesis_family: "value"
+development_start: "2024-01-02"
+development_end: "2026-05-29"
+holdout_start: "2026-07-01"
+holdout_end: "2026-12-31"
+primary_metric: "sharpe_ratio"
+primary_metric_threshold: 0.0
+null_hypothesis: "The forward holdout Sharpe ratio for each registered family is not greater than zero."
+universe: "sp500_historical_standard"
+factors:
+  - book_to_market
+  - earnings_yield
+  - free_cash_flow_yield
+  - sales_yield
+  - beta_to_spy
+  - max_drawdown_252d
+  - realized_vol_252d
+  - realized_vol_60d
+  - momentum_12_1
+  - momentum_3m
+  - momentum_6m
+  - accruals
+  - roe
+hypothesis_families:
+  value:
+    family_id: "multifactor-rule-confirmatory-v2-value"
+    trial_family: "multifactor-rule-confirmatory-v2-value"
+    trial_budget: 2
+    factors:
+      - book_to_market
+      - earnings_yield
+      - free_cash_flow_yield
+      - sales_yield
+    expected_direction: "Higher value composite score should predict higher forward risk-adjusted returns."
+    score_orientation: "higher_score_is_better_after_direction_adjustment"
+    primary_metric: "sharpe_ratio"
+    decision_rule: "Evaluate family-level composite evidence; do not require every constituent value factor to pass FDR independently."
+  low_risk:
+    family_id: "multifactor-rule-confirmatory-v2-low-risk"
+    trial_family: "multifactor-rule-confirmatory-v2-low-risk"
+    trial_budget: 2
+    factors:
+      - beta_to_spy
+      - max_drawdown_252d
+      - realized_vol_252d
+      - realized_vol_60d
+    expected_direction: "Lower raw beta, volatility, and drawdown should predict higher forward risk-adjusted returns."
+    score_orientation: "higher_score_is_better_after_negative_raw_risk_direction"
+    primary_metric: "sharpe_ratio"
+    decision_rule: "Evaluate the low-risk family as one preregistered hypothesis, not four mandatory atomic confirmations."
+  momentum:
+    family_id: "multifactor-rule-confirmatory-v2-momentum"
+    trial_family: "multifactor-rule-confirmatory-v2-momentum"
+    trial_budget: 2
+    factors:
+      - momentum_12_1
+      - momentum_3m
+      - momentum_6m
+    expected_direction: "Higher momentum composite score should predict higher forward risk-adjusted returns."
+    score_orientation: "higher_score_is_better_after_direction_adjustment"
+    primary_metric: "sharpe_ratio"
+    decision_rule: "Evaluate the momentum family as one preregistered hypothesis."
+  quality:
+    family_id: "multifactor-rule-confirmatory-v2-quality"
+    trial_family: "multifactor-rule-confirmatory-v2-quality"
+    trial_budget: 2
+    factors:
+      - accruals
+      - roe
+    expected_direction: "Higher ROE and lower accruals should predict higher forward risk-adjusted returns."
+    score_orientation: "higher_score_is_better_after_direction_adjustment"
+    primary_metric: "sharpe_ratio"
+    decision_rule: "Evaluate the quality family as one preregistered hypothesis."
+forward_validation:
+  type: "forward_holdout"
+  holdout_start: "2026-07-01"
+  holdout_end: "2026-12-31"
+  inspection_policy: "No tuning or family selection after the first holdout inspection."
+  alternative_if_data_unavailable: "Use a preregistered walk-forward window starting no earlier than 2026-07-01."
+portfolio:
+  target_num_holdings: 50
+  max_weight: 0.05
+  max_sector_weight: 0.25
+  max_turnover_per_rebalance: 0.30
+costs:
+  commission_bps: 1.0
+  slippage_bps: 5.0
+  market_impact_coefficient: 0.10
+  max_adv_participation: 0.10
+model:
+  enabled: false
+robustness_tests:
+  - subperiod
+  - cost_sensitivity
+  - top_n_sensitivity
+  - rebalance_day_shift
+start_date: "2024-01-02"
+end_date: "2026-12-31"
+seed: 42
+max_years: 5

@@ -36,7 +36,9 @@ from qss.portfolio.rebalance import run_rebalance
 from qss.progress import emit_progress
 from qss.quickstart import run_quickstart
 from qss.reporting.comprehensive_report import generate_comprehensive_report
+from qss.reporting.report_diff import write_report_diff
 from qss.reporting.service import render_saved_backtest
+from qss.research.attribution import generate_attribution_report
 from qss.research.comparison import generate_baseline_comparison
 from qss.research.forward_validation import (
     evaluate_forward_validation,
@@ -261,6 +263,24 @@ def comprehensive_report_cmd(
     )
 
 
+@app.command("report-diff")
+def report_diff_cmd(
+    left: str = typer.Option(..., "--left"),
+    right: str = typer.Option(..., "--right"),
+    output: str = typer.Option("reports/research/report_diff", "--output"),
+):
+    markdown_path, json_path = write_report_diff(left, right, output)
+    typer.echo(
+        json.dumps(
+            {
+                "markdown": str(markdown_path),
+                "json": str(json_path),
+            },
+            indent=2,
+        )
+    )
+
+
 @app.command("acceptance-check")
 def acceptance_check_cmd(
     config: list[str] = typer.Option(["configs/default.yaml"], "--config"),
@@ -347,6 +367,30 @@ def baseline_comparison_cmd(
                 "markdown": str(markdown_path),
                 "csv": str(csv_path),
             }
+        )
+    )
+
+
+@app.command("attribution-report")
+def attribution_report_cmd(
+    run_path: str = typer.Option(..., "--run-path"),
+    output_root: Optional[str] = typer.Option(None, "--output-root"),
+    config: list[str] = typer.Option(["configs/default.yaml"], "--config"),
+):
+    cfg = _load_app_config(config)
+    try:
+        bundle = generate_attribution_report(run_path, cfg, output_root)
+    except (ValueError, RuntimeError, OSError) as exc:
+        typer.echo(f"invalid: {exc}", err=True)
+        raise typer.Exit(code=2) from exc
+    typer.echo(
+        json.dumps(
+            {
+                "root": str(bundle.root),
+                "markdown": str(bundle.markdown_report),
+                "manifest": str(bundle.manifest),
+            },
+            indent=2,
         )
     )
 

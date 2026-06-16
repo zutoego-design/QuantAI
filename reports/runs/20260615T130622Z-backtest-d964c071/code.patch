@@ -1,0 +1,247 @@
+diff --git a/experiments/registry.duckdb b/experiments/registry.duckdb
+index 95a9f47a4b615b895be6220c1cb12fdc7ddb0478..7cfb3ecc070e7b450a9e5c39f790e3f858102c7d 100644
+GIT binary patch
+delta 8793
+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
+A4*&oF
+
+delta 7304
+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
+
+diff --git a/src/qss/ingestion/prices_yfinance.py b/src/qss/ingestion/prices_yfinance.py
+index 3c8b043..a70847c 100644
+--- a/src/qss/ingestion/prices_yfinance.py
++++ b/src/qss/ingestion/prices_yfinance.py
+@@ -251,6 +251,15 @@ def _persist_prices(
+         ["symbol", "date"],
+         {"yfinance": 100, "stooq": 80, "synthetic_fallback": 0},
+     )
++    persisted_path = Path(config.paths.silver_data) / "prices" / "prices_daily.parquet"
++    persisted = read_parquet(persisted_path)
++    if not persisted.empty and {"symbol", "date", "adj_close"}.issubset(persisted):
++        persisted = persisted.copy()
++        persisted["date"] = pd.to_datetime(persisted["date"]).dt.tz_localize(None)
++        persisted["adj_close"] = pd.to_numeric(persisted["adj_close"], errors="coerce")
++        persisted = persisted.sort_values(["symbol", "date"])
++        persisted["return_1d"] = persisted.groupby("symbol")["adj_close"].pct_change()
++        write_parquet(persisted, persisted_path)
+     write_parquet(
+         seed_master,
+         Path(config.paths.silver_data) / "universe" / "security_master.parquet",
+diff --git a/tests/test_price_ingestion.py b/tests/test_price_ingestion.py
+index 1e69be1..bb926b2 100644
+--- a/tests/test_price_ingestion.py
++++ b/tests/test_price_ingestion.py
+@@ -206,3 +206,78 @@ def test_strict_ingestion_counts_cached_live_symbols(
+         end_date="2025-02-01",
+         tickers=["AAA", "BBB"],
+     )
++
++
++def test_incremental_ingestion_recomputes_boundary_returns(
++    tmp_path,
++    monkeypatch,
++):
++    config = get_config(["configs/default.yaml"]).model_copy(deep=True)
++    config.paths.raw_data = str(tmp_path / "raw")
++    config.paths.silver_data = str(tmp_path / "silver")
++    config.paths.reports = str(tmp_path / "reports")
++    master = pd.DataFrame(
++        {
++            "symbol": ["AAA"],
++            "is_active": [True],
++            "source": ["test"],
++            "ingestion_time": [pd.Timestamp("2025-01-01")],
++        }
++    )
++    write_parquet(
++        master,
++        tmp_path / "silver" / "universe" / "security_master.parquet",
++    )
++    cached = pd.DataFrame(
++        {
++            "symbol": ["AAA", "AAA"],
++            "date": pd.to_datetime(["2025-01-01", "2025-01-02"]),
++            "open": [100.0, 101.0],
++            "high": [100.0, 101.0],
++            "low": [100.0, 101.0],
++            "close": [100.0, 101.0],
++            "adj_close": [100.0, 101.0],
++            "volume": [100, 100],
++            "return_1d": [pd.NA, 0.01],
++            "source": ["yfinance", "yfinance"],
++            "quality_status": ["live", "live"],
++            "ingestion_time": [pd.Timestamp("2025-01-02")] * 2,
++        }
++    )[PRICE_COLUMNS]
++    write_parquet(
++        cached,
++        tmp_path / "silver" / "prices" / "prices_daily.parquet",
++    )
++
++    def fake_fetch(self, tickers, start_date, end_date=None):
++        columns = pd.MultiIndex.from_product(
++            [["AAA"], ["Open", "High", "Low", "Close", "Adj Close", "Volume"]]
++        )
++        return pd.DataFrame(
++            [
++                [101.0, 101.0, 101.0, 101.0, 101.0, 100],
++                [103.02, 103.02, 103.02, 103.02, 103.02, 100],
++            ],
++            index=pd.to_datetime(["2025-01-02", "2025-01-03"]),
++            columns=columns,
++        ).rename_axis("Date")
++
++    monkeypatch.setattr(YFinancePriceProvider, "fetch", fake_fetch)
++    monkeypatch.setattr(
++        "qss.ingestion.prices_yfinance._flatten_etf_tickers",
++        lambda config: [],
++    )
++
++    ingest_prices(
++        config,
++        start_date="2025-01-02",
++        end_date="2025-01-04",
++        tickers=["AAA"],
++    )
++
++    saved = pd.read_parquet(
++        tmp_path / "silver" / "prices" / "prices_daily.parquet"
++    ).sort_values("date")
++    returns = saved.set_index("date")["return_1d"]
++    assert returns.loc[pd.Timestamp("2025-01-02")] == pytest.approx(0.01)
++    assert returns.loc[pd.Timestamp("2025-01-03")] == pytest.approx(0.02)

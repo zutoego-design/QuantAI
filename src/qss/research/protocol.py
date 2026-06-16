@@ -2,15 +2,18 @@ from __future__ import annotations
 
 import hashlib
 import json
-from typing import Literal
+from typing import Any, Literal
 
 import pandas as pd
 from pydantic import BaseModel, Field, model_validator
+
+StudyStatus = Literal["active", "closed", "superseded", "rejected_final"]
 
 
 class ResearchProtocol(BaseModel):
     study_id: str
     stage: Literal["exploratory", "confirmatory"] = "exploratory"
+    study_status: StudyStatus = "active"
     development_start: str
     development_end: str
     holdout_start: str | None = None
@@ -25,6 +28,10 @@ class ResearchProtocol(BaseModel):
     primary_metric_threshold: float = 0.0
     null_hypothesis: str = "The strategy has no positive out-of-sample investment value."
     trial_family: str
+    trial_budget: int | None = Field(default=None, ge=1)
+    clean_git_required: bool = False
+    factor_evidence_mode: Literal["factor_level", "family_level"] = "factor_level"
+    hypothesis_families: dict[str, dict[str, Any]] = Field(default_factory=dict)
     factor_directions: dict[str, Literal[-1, 1]] = Field(default_factory=dict)
 
     @model_validator(mode="after")

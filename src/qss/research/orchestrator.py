@@ -23,9 +23,11 @@ from qss.research.decision import (
     research_evidence_decision,
     write_research_decision,
 )
+from qss.research.governance import confirmatory_rerun_guard
 from qss.research.portfolio_evaluation import simulate_score_portfolio
 from qss.research.protocol import (
     ResearchProtocol,
+    StudyStatus,
     exploratory_protocol,
     validate_label_gap,
 )
@@ -36,6 +38,17 @@ from qss.research.statistics import (
     fama_french_style_regression,
 )
 from qss.runs.manifest import create_run_context
+
+
+class HypothesisFamily(BaseModel):
+    family_id: str | None = None
+    trial_family: str | None = None
+    factors: list[str] = Field(default_factory=list)
+    expected_direction: str
+    score_orientation: str
+    trial_budget: int | None = Field(default=None, ge=1)
+    primary_metric: str | None = None
+    decision_rule: str | None = None
 
 
 class ExperimentSpec(BaseModel):
@@ -60,6 +73,7 @@ class ExperimentSpec(BaseModel):
     max_years: int = 20
     study_id: str | None = None
     research_stage: str = "exploratory"
+    study_status: StudyStatus = "active"
     development_start: str | None = None
     development_end: str | None = None
     holdout_start: str | None = None
@@ -70,6 +84,12 @@ class ExperimentSpec(BaseModel):
         "The strategy has no positive out-of-sample investment value."
     )
     trial_family: str | None = None
+    trial_budget: int | None = Field(default=None, ge=1)
+    require_clean_git: bool = True
+    factor_evidence_mode: str = "factor_level"
+    hypothesis_families: dict[str, HypothesisFamily] = Field(default_factory=dict)
+    primary_hypothesis_family: str | None = None
+    forward_validation: dict = Field(default_factory=dict)
     factor_directions: dict[str, int] = Field(default_factory=dict)
 
     @field_validator("end_date")
@@ -112,6 +132,13 @@ class ExperimentSpec(BaseModel):
                     "Confirmatory experiments require robustness tests: "
                     f"{', '.join(missing_robustness)}"
                 )
+            if (
+                self.primary_hypothesis_family
+                and self.primary_hypothesis_family not in self.hypothesis_families
+            ):
+                raise ValueError(
+                    "primary_hypothesis_family must be defined in hypothesis_families"
+                )
             start_period = pd.Timestamp(self.start_date).to_period("M")
             end_period = pd.Timestamp(self.end_date).to_period("M")
             if end_period.ordinal - start_period.ordinal + 1 < 24:
@@ -130,6 +157,26 @@ class ExperimentSpec(BaseModel):
         )
         return hashlib.sha256(payload.encode("utf-8")).hexdigest()
 
+    @property
+    def legacy_spec_hash_without_governance(self) -> str:
+        payload = json.dumps(
+            self.model_dump(
+                mode="json",
+                exclude={
+                    "study_status",
+                    "trial_budget",
+                    "require_clean_git",
+                    "factor_evidence_mode",
+                    "hypothesis_families",
+                    "primary_hypothesis_family",
+                    "forward_validation",
+                },
+            ),
+            sort_keys=True,
+            separators=(",", ":"),
+        )
+        return hashlib.sha256(payload.encode("utf-8")).hexdigest()
+
     def research_protocol(self) -> ResearchProtocol:
         if not self.study_id:
             return exploratory_protocol(
@@ -141,6 +188,7 @@ class ExperimentSpec(BaseModel):
         return ResearchProtocol(
             study_id=self.study_id,
             stage=self.research_stage,
+            study_status=self.study_status,
             development_start=self.development_start or self.start_date,
             development_end=self.development_end or self.end_date,
             holdout_start=self.holdout_start,
@@ -149,6 +197,15 @@ class ExperimentSpec(BaseModel):
             primary_metric_threshold=self.primary_metric_threshold,
             null_hypothesis=self.null_hypothesis,
             trial_family=self.trial_family or self.study_id,
+            trial_budget=self.trial_budget,
+            clean_git_required=(
+                self.require_clean_git if self.research_stage == "confirmatory" else False
+            ),
+            factor_evidence_mode=self.factor_evidence_mode,
+            hypothesis_families={
+                name: family.model_dump(mode="json")
+                for name, family in self.hypothesis_families.items()
+            },
             factor_directions=self.factor_directions,
         )
 
@@ -619,6 +676,13 @@ class ResearchOrchestrator:
             if registry is not None
             else 1
         )
+        confirmatory_rerun_guard(
+            protocol,
+            trial_number=trial_number,
+            trial_budget=spec.trial_budget,
+            registry_enabled=registry is not None,
+            require_clean_git=spec.require_clean_git,
+        )
         data_snapshot = build_data_snapshot(experiment_config)
         if registry is not None:
             prior_snapshot = registry.data_snapshot_for_spec(spec.spec_hash)
@@ -644,6 +708,8 @@ class ResearchOrchestrator:
             spec_hash=spec.spec_hash,
             data_snapshot_id=data_snapshot["snapshot_id"],
             trial_number=trial_number,
+            study_status=protocol.study_status,
+            trial_budget=protocol.trial_budget,
         )
 
         def register_experiment(

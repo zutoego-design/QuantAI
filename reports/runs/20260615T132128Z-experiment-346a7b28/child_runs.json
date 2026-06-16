@@ -1,0 +1,34 @@
+[
+  {
+    "period": "full",
+    "run_id": "20260615T132129Z-backtest-a3307fe2"
+  },
+  {
+    "period": "first_half",
+    "run_id": "20260615T132234Z-backtest-bb6be125"
+  },
+  {
+    "period": "second_half",
+    "run_id": "20260615T132234Z-backtest-d51909a6"
+  },
+  {
+    "period": "top_n_30",
+    "run_id": "20260615T132239Z-backtest-f6632357"
+  },
+  {
+    "period": "top_n_50",
+    "run_id": "20260615T132239Z-backtest-b8ac50e7"
+  },
+  {
+    "period": "top_n_100",
+    "run_id": "20260615T132245Z-backtest-3a77c000"
+  },
+  {
+    "period": "rebalance_shift_-5",
+    "run_id": "20260615T132319Z-backtest-c82618cb"
+  },
+  {
+    "period": "rebalance_shift_+5",
+    "run_id": "20260615T132326Z-backtest-823280cc"
+  }
+]

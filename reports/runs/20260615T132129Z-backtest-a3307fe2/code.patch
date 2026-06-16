@@ -1,0 +1,460 @@
+diff --git a/experiments/registry.duckdb b/experiments/registry.duckdb
+index 95a9f47a4b615b895be6220c1cb12fdc7ddb0478..ef714c34c9a9b467a40d76a204f89a17d8b12d0b 100644
+GIT binary patch
+delta 15179
+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
+
+delta 8586
+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
+X)xFKsxC?KR(>BT1Y?9MA$s_&=umxsG
+
+diff --git a/src/qss/acceptance.py b/src/qss/acceptance.py
+index 74ef413..a05193b 100644
+--- a/src/qss/acceptance.py
++++ b/src/qss/acceptance.py
+@@ -135,6 +135,38 @@ def _mappings_equivalent(
+     return True
+ 
+ 
++def _required_robustness_blockers(robustness: pd.DataFrame) -> list[str]:
++    required_robustness = {
++        "subperiod",
++        "cost_sensitivity",
++        "top_n_sensitivity",
++        "rebalance_day_shift",
++    }
++    observed_robustness = (
++        set(robustness["test"]) if not robustness.empty else set()
++    )
++    blockers: list[str] = []
++    missing_robustness = sorted(required_robustness - observed_robustness)
++    invalid_robustness = (
++        robustness.loc[
++            robustness["test"].isin(required_robustness)
++            & (robustness["status"] != "valid"),
++            ["test", "setting"],
++        ].to_dict("records")
++        if not robustness.empty
++        else []
++    )
++    if missing_robustness:
++        blockers.append(
++            f"Required robustness tests are missing: {missing_robustness}."
++        )
++    if invalid_robustness:
++        blockers.append(
++            f"Required robustness tests are invalid: {invalid_robustness}."
++        )
++    return blockers
++
++
+ def _experiment_acceptance_checks(
+     config: AppConfig,
+     root: Path,
+@@ -496,6 +528,7 @@ def _experiment_acceptance_checks(
+     )
+ 
+     blockers = list(factor_blockers)
++    blockers.extend(_required_robustness_blockers(robustness))
+     if recomputed_exposures.empty:
+         blockers.append(
+             "Fama-French 5-factor plus Momentum regression had insufficient overlap."
+diff --git a/src/qss/ingestion/prices_yfinance.py b/src/qss/ingestion/prices_yfinance.py
+index 3c8b043..a70847c 100644
+--- a/src/qss/ingestion/prices_yfinance.py
++++ b/src/qss/ingestion/prices_yfinance.py
+@@ -251,6 +251,15 @@ def _persist_prices(
+         ["symbol", "date"],
+         {"yfinance": 100, "stooq": 80, "synthetic_fallback": 0},
+     )
++    persisted_path = Path(config.paths.silver_data) / "prices" / "prices_daily.parquet"
++    persisted = read_parquet(persisted_path)
++    if not persisted.empty and {"symbol", "date", "adj_close"}.issubset(persisted):
++        persisted = persisted.copy()
++        persisted["date"] = pd.to_datetime(persisted["date"]).dt.tz_localize(None)
++        persisted["adj_close"] = pd.to_numeric(persisted["adj_close"], errors="coerce")
++        persisted = persisted.sort_values(["symbol", "date"])
++        persisted["return_1d"] = persisted.groupby("symbol")["adj_close"].pct_change()
++        write_parquet(persisted, persisted_path)
+     write_parquet(
+         seed_master,
+         Path(config.paths.silver_data) / "universe" / "security_master.parquet",
+diff --git a/src/qss/portfolio/optimizer.py b/src/qss/portfolio/optimizer.py
+index 1c22695..7d22152 100644
+--- a/src/qss/portfolio/optimizer.py
++++ b/src/qss/portfolio/optimizer.py
+@@ -94,13 +94,19 @@ def optimize_portfolio_to_target_count(
+         config,
+     )
+     target = min(config.constraints.target_num_holdings, len(scores))
+-    if broad.status == "fallback" or len(broad.weights) == target:
++    if broad.status != "fallback" and len(broad.weights) == target:
+         return broad
+ 
+-    selected_order = broad.weights.sort_values(
+-        "target_weight",
+-        ascending=False,
+-    )["symbol"].astype(str).tolist()
++    selected_order = (
++        broad.weights.sort_values(
++            "target_weight",
++            ascending=False,
++        )["symbol"]
++        .astype(str)
++        .tolist()
++        if not broad.weights.empty and "target_weight" in broad.weights
++        else []
++    )
+     selected_order.extend(
+         scores.sort_values("total_score", ascending=False)["symbol"]
+         .astype(str)
+@@ -125,12 +131,17 @@ def optimize_portfolio_to_target_count(
+         exact_config,
+     )
+     if exact.status == "fallback" or len(exact.weights) != target:
++        warnings = [
++            warning
++            for warning in [broad.warning, exact.warning]
++            if warning
++        ]
+         return OptimizationResult(
+             weights=exact.weights,
+             status="fallback",
+             warning=(
+                 f"Exact-cardinality optimization produced {len(exact.weights)} "
+-                f"holdings; {target} are required. {exact.warning or ''}"
++                f"holdings; {target} are required. {' '.join(warnings)}"
+             ).strip(),
+         )
+     exact.status = f"{exact.status}_target_cardinality"
+diff --git a/tests/test_optimizer.py b/tests/test_optimizer.py
+index fb5a269..49a9ce1 100644
+--- a/tests/test_optimizer.py
++++ b/tests/test_optimizer.py
+@@ -105,3 +105,35 @@ def test_operational_optimizer_enforces_exact_target_count():
+         result.weights.groupby("sector")["target_weight"].sum().max()
+         <= config.constraints.max_sector_weight + 1e-6
+     )
++
++
++def test_exact_target_count_runs_after_sparse_broad_fallback():
++    config = get_config(["configs/default.yaml"]).optimizer
++    config.constraints.target_num_holdings = 100
++    scores = _sample_scores(100)
++    covariance = pd.DataFrame(
++        np.eye(len(scores)) * 0.0001,
++        index=scores["symbol"],
++        columns=scores["symbol"],
++    )
++
++    broad = optimize_portfolio_with_status(
++        scores=scores,
++        covariance=covariance,
++        previous_weights=pd.Series(dtype=float),
++        sector_map=scores.set_index("symbol")["sector"],
++        config=config,
++    )
++    result = optimize_portfolio_to_target_count(
++        scores=scores,
++        covariance=covariance,
++        previous_weights=pd.Series(dtype=float),
++        sector_map=scores.set_index("symbol")["sector"],
++        config=config,
++    )
++
++    assert broad.status == "fallback"
++    assert len(broad.weights) < config.constraints.target_num_holdings
++    assert result.status != "fallback"
++    assert len(result.weights) == config.constraints.target_num_holdings
++    assert result.weights["target_weight"].min() > 0
+diff --git a/tests/test_price_ingestion.py b/tests/test_price_ingestion.py
+index 1e69be1..bb926b2 100644
+--- a/tests/test_price_ingestion.py
++++ b/tests/test_price_ingestion.py
+@@ -206,3 +206,78 @@ def test_strict_ingestion_counts_cached_live_symbols(
+         end_date="2025-02-01",
+         tickers=["AAA", "BBB"],
+     )
++
++
++def test_incremental_ingestion_recomputes_boundary_returns(
++    tmp_path,
++    monkeypatch,
++):
++    config = get_config(["configs/default.yaml"]).model_copy(deep=True)
++    config.paths.raw_data = str(tmp_path / "raw")
++    config.paths.silver_data = str(tmp_path / "silver")
++    config.paths.reports = str(tmp_path / "reports")
++    master = pd.DataFrame(
++        {
++            "symbol": ["AAA"],
++            "is_active": [True],
++            "source": ["test"],
++            "ingestion_time": [pd.Timestamp("2025-01-01")],
++        }
++    )
++    write_parquet(
++        master,
++        tmp_path / "silver" / "universe" / "security_master.parquet",
++    )
++    cached = pd.DataFrame(
++        {
++            "symbol": ["AAA", "AAA"],
++            "date": pd.to_datetime(["2025-01-01", "2025-01-02"]),
++            "open": [100.0, 101.0],
++            "high": [100.0, 101.0],
++            "low": [100.0, 101.0],
++            "close": [100.0, 101.0],
++            "adj_close": [100.0, 101.0],
++            "volume": [100, 100],
++            "return_1d": [pd.NA, 0.01],
++            "source": ["yfinance", "yfinance"],
++            "quality_status": ["live", "live"],
++            "ingestion_time": [pd.Timestamp("2025-01-02")] * 2,
++        }
++    )[PRICE_COLUMNS]
++    write_parquet(
++        cached,
++        tmp_path / "silver" / "prices" / "prices_daily.parquet",
++    )
++
++    def fake_fetch(self, tickers, start_date, end_date=None):
++        columns = pd.MultiIndex.from_product(
++            [["AAA"], ["Open", "High", "Low", "Close", "Adj Close", "Volume"]]
++        )
++        return pd.DataFrame(
++            [
++                [101.0, 101.0, 101.0, 101.0, 101.0, 100],
++                [103.02, 103.02, 103.02, 103.02, 103.02, 100],
++            ],
++            index=pd.to_datetime(["2025-01-02", "2025-01-03"]),
++            columns=columns,
++        ).rename_axis("Date")
++
++    monkeypatch.setattr(YFinancePriceProvider, "fetch", fake_fetch)
++    monkeypatch.setattr(
++        "qss.ingestion.prices_yfinance._flatten_etf_tickers",
++        lambda config: [],
++    )
++
++    ingest_prices(
++        config,
++        start_date="2025-01-02",
++        end_date="2025-01-04",
++        tickers=["AAA"],
++    )
++
++    saved = pd.read_parquet(
++        tmp_path / "silver" / "prices" / "prices_daily.parquet"
++    ).sort_values("date")
++    returns = saved.set_index("date")["return_1d"]
++    assert returns.loc[pd.Timestamp("2025-01-02")] == pytest.approx(0.01)
++    assert returns.loc[pd.Timestamp("2025-01-03")] == pytest.approx(0.02)
+diff --git a/tests/test_research_credibility.py b/tests/test_research_credibility.py
+index 4a17814..3fba684 100644
+--- a/tests/test_research_credibility.py
++++ b/tests/test_research_credibility.py
+@@ -4,6 +4,7 @@ import numpy as np
+ import pandas as pd
+ import pytest
+ 
++from qss.acceptance import _required_robustness_blockers
+ from qss.config.loader import get_config
+ from qss.experiments.registry import ExperimentRegistry
+ from qss.ingestion.fama_french import _parse_daily_factors
+@@ -358,6 +359,22 @@ def test_top_n_robustness_diff_only_changes_target_count():
+     }
+ 
+ 
++def test_acceptance_recomputes_invalid_robustness_blocker():
++    robustness = pd.DataFrame(
++        [
++            {"test": "subperiod", "setting": "first_half", "status": "valid"},
++            {"test": "cost_sensitivity", "setting": "5_bps", "status": "valid"},
++            {"test": "top_n_sensitivity", "setting": "100", "status": "invalid"},
++            {"test": "rebalance_day_shift", "setting": "5", "status": "valid"},
++        ]
++    )
++
++    assert _required_robustness_blockers(robustness) == [
++        "Required robustness tests are invalid: "
++        "[{'test': 'top_n_sensitivity', 'setting': '100'}]."
++    ]
++
++
+ def test_research_decision_separates_artifacts_from_evidence():
+     bootstrap = pd.DataFrame(
+         [

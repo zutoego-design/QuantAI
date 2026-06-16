@@ -94,13 +94,19 @@ def optimize_portfolio_to_target_count(
         config,
     )
     target = min(config.constraints.target_num_holdings, len(scores))
-    if broad.status == "fallback" or len(broad.weights) == target:
+    if broad.status != "fallback" and len(broad.weights) == target:
         return broad
 
-    selected_order = broad.weights.sort_values(
-        "target_weight",
-        ascending=False,
-    )["symbol"].astype(str).tolist()
+    selected_order = (
+        broad.weights.sort_values(
+            "target_weight",
+            ascending=False,
+        )["symbol"]
+        .astype(str)
+        .tolist()
+        if not broad.weights.empty and "target_weight" in broad.weights
+        else []
+    )
     selected_order.extend(
         scores.sort_values("total_score", ascending=False)["symbol"]
         .astype(str)
@@ -125,12 +131,17 @@ def optimize_portfolio_to_target_count(
         exact_config,
     )
     if exact.status == "fallback" or len(exact.weights) != target:
+        warnings = [
+            warning
+            for warning in [broad.warning, exact.warning]
+            if warning
+        ]
         return OptimizationResult(
             weights=exact.weights,
             status="fallback",
             warning=(
                 f"Exact-cardinality optimization produced {len(exact.weights)} "
-                f"holdings; {target} are required. {exact.warning or ''}"
+                f"holdings; {target} are required. {' '.join(warnings)}"
             ).strip(),
         )
     exact.status = f"{exact.status}_target_cardinality"

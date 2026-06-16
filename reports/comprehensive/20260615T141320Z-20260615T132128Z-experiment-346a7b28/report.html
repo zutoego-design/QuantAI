@@ -1,0 +1,492 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>QuantAI 综合研究报告 - 20260615T132128Z-experiment-346a7b28</title>
+  <style>
+    :root {
+      --ink: #17213c;
+      --muted: #647089;
+      --paper: #f4f7fb;
+      --surface: #ffffff;
+      --line: #d9e1ec;
+      --indigo: #263f91;
+      --indigo-soft: #e8edff;
+      --cyan: #1e8c91;
+      --cyan-soft: #e5f4f3;
+      --amber: #bd761b;
+      --amber-soft: #fff3dc;
+      --red: #b74848;
+      --red-soft: #fbe8e8;
+      --shadow: 0 18px 55px rgba(28, 46, 91, 0.11);
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      color: var(--ink);
+      background:
+        linear-gradient(rgba(38, 63, 145, 0.035) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(38, 63, 145, 0.035) 1px, transparent 1px),
+        var(--paper);
+      background-size: 28px 28px;
+      font-family: "Microsoft YaHei UI", "PingFang SC", "Segoe UI", sans-serif;
+      line-height: 1.55;
+    }
+    .page { max-width: 1320px; margin: 0 auto; padding: 28px 28px 64px; }
+    .masthead {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 8px 2px 22px; color: var(--muted); font-size: 12px;
+      letter-spacing: .08em; text-transform: uppercase;
+    }
+    .brand { color: var(--indigo); font: 700 16px "Cascadia Mono", monospace; }
+    .hero {
+      position: relative; overflow: hidden; display: grid; grid-template-columns: 1.45fr .75fr;
+      gap: 34px; padding: 48px; border-radius: 26px; color: white;
+      background:
+        radial-gradient(circle at 90% 10%, rgba(117, 203, 200, .28), transparent 32%),
+        linear-gradient(132deg, #1c2a60 0%, #304e9e 58%, #277d85 120%);
+      box-shadow: var(--shadow);
+    }
+    .hero::after {
+      content: ""; position: absolute; right: -70px; bottom: -120px; width: 360px; height: 360px;
+      border: 1px solid rgba(255,255,255,.2); border-radius: 50%;
+      box-shadow: 0 0 0 35px rgba(255,255,255,.045), 0 0 0 70px rgba(255,255,255,.025);
+    }
+    .eyebrow { font: 700 12px "Cascadia Mono", monospace; letter-spacing: .16em; opacity: .72; }
+    h1 { margin: 16px 0 14px; font: 700 clamp(34px, 4.2vw, 50px)/1.08 "Bahnschrift SemiCondensed", "Microsoft YaHei UI", sans-serif; letter-spacing: -.035em; }
+    .hero p { margin: 0; max-width: 760px; color: #dfe8ff; font-size: 17px; }
+    .verdict {
+      position: relative; z-index: 1; align-self: stretch; display: flex; flex-direction: column;
+      justify-content: center; padding: 26px; border: 1px solid rgba(255,255,255,.2);
+      border-radius: 19px; background: rgba(9, 19, 50, .28); backdrop-filter: blur(8px);
+    }
+    .verdict-label { font-size: 12px; opacity: .7; letter-spacing: .12em; }
+    .verdict strong { margin: 8px 0; font-size: 34px; letter-spacing: -.03em; }
+    .verdict.rejected strong { color: #ffd0c3; }
+    .verdict.supported strong { color: #bff4dd; }
+    .verdict.inconclusive strong { color: #ffe0a3; }
+    .verdict small { color: #dce6ff; }
+    .workspace-warning {
+      display: grid; grid-template-columns: 210px 1fr; gap: 16px; align-items: center;
+      margin: 18px 0; padding: 15px 18px; border-radius: 12px;
+      color: #6f3b00; background: #fff2ce; border: 1px solid #f0c56d;
+    }
+    .workspace-warning strong { font-size: 14px; text-transform: uppercase; letter-spacing: .08em; }
+    .workspace-warning span { font-size: 12px; line-height: 1.45; overflow-wrap: anywhere; }
+    .meta-strip {
+      display: grid; grid-template-columns: repeat(6, 1fr); margin: 18px 0 34px;
+      background: var(--surface); border: 1px solid var(--line); border-radius: 16px;
+      box-shadow: 0 8px 28px rgba(28, 46, 91, .06); overflow: hidden;
+    }
+    .meta { padding: 18px 20px; border-right: 1px solid var(--line); min-width: 0; }
+    .meta:last-child { border-right: 0; }
+    .meta span { display: block; color: var(--muted); font-size: 11px; letter-spacing: .08em; text-transform: uppercase; }
+    .meta strong { display: block; margin-top: 5px; font-size: 14px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .section { margin-top: 38px; }
+    .section-head { display: flex; align-items: end; justify-content: space-between; gap: 24px; margin-bottom: 16px; }
+    h2 { margin: 0; font: 700 26px "Bahnschrift SemiCondensed", "Microsoft YaHei UI", sans-serif; letter-spacing: -.02em; }
+    .section-head p { margin: 0; color: var(--muted); font-size: 13px; max-width: 660px; text-align: right; }
+    .metrics { display: grid; grid-template-columns: repeat(6, 1fr); gap: 12px; }
+    .metric { padding: 20px; background: var(--surface); border: 1px solid var(--line); border-radius: 15px; }
+    .metric-label { color: var(--muted); font-size: 12px; }
+    .metric-value { margin: 8px 0 5px; font: 700 27px "Bahnschrift SemiCondensed", "Cascadia Mono", sans-serif; letter-spacing: -.02em; }
+    .metric-note { color: var(--muted); font-size: 11px; }
+    .metric.negative .metric-value { color: var(--red); }
+    .chart-card, .card {
+      padding: 24px; background: var(--surface); border: 1px solid var(--line);
+      border-radius: 18px; box-shadow: 0 10px 34px rgba(28, 46, 91, .055);
+    }
+    .chart-legend { display: flex; justify-content: flex-end; gap: 22px; color: var(--muted); font-size: 12px; }
+    .swatch { display: inline-block; width: 18px; height: 3px; margin-right: 7px; vertical-align: middle; border-radius: 2px; }
+    .swatch.portfolio { background: var(--indigo); }
+    .swatch.benchmark { background: #9aa6bb; }
+    svg { width: 100%; height: auto; overflow: visible; }
+    .chart-grid { stroke: #e9eef5; stroke-width: 1; }
+    .line { fill: none; stroke-linecap: round; stroke-linejoin: round; stroke-width: 4; }
+    .portfolio-line { stroke: var(--indigo); }
+    .benchmark-line { stroke: #a5afbf; stroke-width: 2.5; }
+    .axis-label { fill: var(--muted); font: 12px "Cascadia Mono", monospace; }
+    .drawdown-chart { margin-top: -10px; }
+    .zero-line { stroke: #d3dbe8; }
+    .drawdown-area { fill: rgba(183, 72, 72, .10); }
+    .drawdown-line { fill: none; stroke: var(--red); stroke-width: 2; }
+    .evidence-grid { display: grid; grid-template-columns: minmax(0, 1.45fr) minmax(300px, .75fr); gap: 18px; }
+    .evidence-rail { position: relative; padding: 6px 0; }
+    .evidence-rail::before { content: ""; position: absolute; left: 17px; top: 25px; bottom: 25px; width: 2px; background: var(--line); }
+    .gate { position: relative; display: grid; grid-template-columns: 36px 1fr; gap: 15px; padding: 12px 0; }
+    .gate-mark { position: relative; z-index: 1; display: grid; place-items: center; }
+    .gate-mark span { width: 15px; height: 15px; border: 3px solid white; border-radius: 50%; box-shadow: 0 0 0 1px var(--line); background: #aeb8c8; }
+    .gate.pass .gate-mark span { background: var(--cyan); }
+    .gate.fail .gate-mark span { background: var(--red); }
+    .gate-body { padding: 16px 18px; border: 1px solid var(--line); border-radius: 14px; background: var(--surface); }
+    .gate-top { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+    .gate h3 { margin: 0; font-size: 15px; }
+    .gate-status { padding: 3px 8px; border-radius: 999px; font-size: 11px; background: #eef1f5; color: var(--muted); }
+    .gate.pass .gate-status { color: var(--cyan); background: var(--cyan-soft); }
+    .gate.fail .gate-status { color: var(--red); background: var(--red-soft); }
+    .gate-reading { display: flex; align-items: baseline; gap: 12px; margin: 8px 0 4px; }
+    .gate-reading strong { font: 700 22px "Cascadia Mono", monospace; }
+    .gate-reading span, .gate p { color: var(--muted); font-size: 12px; }
+    .gate p { margin: 0; }
+    .decision-card { padding: 25px; border-radius: 18px; background: var(--red-soft); border: 1px solid #f1caca; }
+    .decision-card h3 { margin: 0 0 10px; color: var(--red); font-size: 19px; }
+    .decision-card p { margin: 0; color: #6f4444; }
+    .decision-card ul { padding-left: 19px; margin: 16px 0 0; color: #6f4444; font-size: 13px; }
+    .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
+    .factor-row { display: grid; grid-template-columns: 175px 1fr 65px 80px 90px; gap: 12px; align-items: center; padding: 9px 0; border-bottom: 1px solid #edf1f6; font-size: 12px; }
+    .factor-row:last-child { border-bottom: 0; }
+    .factor-name { font-family: "Cascadia Mono", monospace; font-size: 11px; }
+    .factor-bar { height: 7px; border-radius: 5px; background: #edf1f6; overflow: hidden; }
+    .factor-bar span { display: block; height: 100%; border-radius: inherit; background: #aeb8c8; }
+    .factor-bar span.direction { background: var(--amber); }
+    .factor-bar span.supported { background: var(--cyan); }
+    .factor-ic, .factor-q { font-family: "Cascadia Mono", monospace; color: var(--muted); }
+    .factor-state { text-align: right; font-size: 11px; color: var(--red); }
+    .factor-state.direction { color: var(--amber); }
+    .factor-state.supported { color: var(--cyan); }
+    .table-wrap { overflow-x: auto; }
+    table { width: 100%; border-collapse: collapse; font-size: 12px; }
+    th { padding: 10px; color: var(--muted); font-weight: 600; text-align: left; border-bottom: 1px solid var(--line); white-space: nowrap; }
+    td { padding: 10px; border-bottom: 1px solid #edf1f6; font-family: "Cascadia Mono", monospace; white-space: nowrap; }
+    .provenance { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; }
+    .hash { padding: 15px; border-radius: 12px; background: #eef2f8; overflow-wrap: anywhere; }
+    .hash span { display: block; color: var(--muted); font-size: 11px; }
+    .hash code { font-size: 11px; color: var(--indigo); }
+    .links { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 18px; }
+    .links a { color: var(--indigo); text-decoration: none; padding: 8px 11px; border: 1px solid #cfd8ec; border-radius: 9px; background: white; font-size: 12px; }
+    .empty { color: var(--muted); padding: 20px; text-align: center; }
+    footer { margin-top: 44px; padding-top: 18px; border-top: 1px solid var(--line); display: flex; justify-content: space-between; color: var(--muted); font-size: 11px; }
+    @media (max-width: 980px) {
+      .hero, .evidence-grid, .two-col { grid-template-columns: 1fr; }
+      .metrics { grid-template-columns: repeat(3, 1fr); }
+      .meta-strip { grid-template-columns: repeat(2, 1fr); }
+      .meta { border-bottom: 1px solid var(--line); }
+      .factor-row { grid-template-columns: 130px 1fr 55px; }
+      .factor-q, .factor-state { display: none; }
+    }
+    @media (max-width: 620px) {
+      .page { padding: 16px 14px 40px; }
+      .hero { padding: 28px 22px; border-radius: 18px; }
+      .metrics { grid-template-columns: repeat(2, 1fr); }
+      .meta-strip { grid-template-columns: 1fr; }
+      .meta { border-right: 0; }
+      .section-head { align-items: start; flex-direction: column; }
+      .section-head p { text-align: left; }
+      .provenance { grid-template-columns: 1fr; }
+      footer { flex-direction: column; gap: 8px; }
+    }
+    @media print {
+      body { background: white; }
+      .page { max-width: none; padding: 0; }
+      .hero, .card, .chart-card, .metric { box-shadow: none; break-inside: avoid; }
+      .links { display: none; }
+    }
+  </style>
+</head>
+<body>
+<main class="page">
+  <header class="masthead">
+    <div class="brand">QSS / RESEARCH DOSSIER</div>
+    <div>生成时间 2026-06-15 14:13 UTC</div>
+  </header>
+
+  <section class="hero">
+    <div>
+      <div class="eyebrow">确认性量化研究综合报告</div>
+      <h1>收益出现了，证据还没有过关。</h1>
+      <p>该确认性研究已经关闭，当前留出期不得继续用于 v1 调参或确认性重跑。</p>
+    </div>
+    <div class="verdict rejected">
+      <span class="verdict-label">研究结论</span>
+      <strong>最终拒绝</strong>
+      <small>产物状态：有效 · 试验 5/5 · Holdout 查看 5 次 · 有效产物不等于研究支持或交易批准</small>
+    </div>
+  </section>
+
+  
+  <section class="workspace-warning">
+    <strong>Dirty git workspace</strong>
+    <span>该确认性报告的代码身份包含 dirty 标记。未来确认性研究默认要求 clean commit；本报告仅保留为可追溯历史产物。Code: git:fde60533f218c73a15874bd47000f5eae5025f0c:dirty:28886f33220009f6d80acb0fb9c8827a42d3a87141093873463c30f941b6f965</span>
+  </section>
+        
+
+  <section class="meta-strip">
+    <div class="meta"><span>Study</span><strong title="multifactor-rule-confirmatory-v1">multifactor-rule-confirmatory-v1</strong></div>
+    <div class="meta"><span>Source run</span><strong title="20260615T132128Z-experiment-346a7b28">20260615T132128Z-experiment-346a7b28</strong></div>
+    <div class="meta"><span>Holdout</span><strong>2024-08-01 至 2025-12-31</strong></div>
+    <div class="meta"><span>Data cutoff</span><strong>2025-12-31</strong></div>
+    <div class="meta"><span>Model</span><strong>rule_score</strong></div>
+    <div class="meta"><span>Trials / Budget</span><strong>5/5</strong></div>
+  </section>
+
+  <section class="section">
+    <div class="section-head"><h2>留出期表现</h2><p>以下数字来自统一优化器、成本模型和账本后的净指标，不混入开发期。</p></div>
+    <div class="metrics">
+      <article class="metric "><div class="metric-label">净总收益</div><div class="metric-value">33.7%</div><div class="metric-note">基准 24.0%</div></article>
+      <article class="metric "><div class="metric-label">年化收益</div><div class="metric-value">22.8%</div><div class="metric-note">Holdout CAGR</div></article>
+      <article class="metric "><div class="metric-label">Sharpe</div><div class="metric-value">1.43</div><div class="metric-note">净收益口径</div></article>
+      <article class="metric negative"><div class="metric-label">最大回撤</div><div class="metric-value">-13.9%</div><div class="metric-note">峰值至谷底</div></article>
+      <article class="metric "><div class="metric-label">平均换手</div><div class="metric-value">10.3%</div><div class="metric-note">每次调仓</div></article>
+      <article class="metric "><div class="metric-label">成本拖累</div><div class="metric-value">0.19%</div><div class="metric-note">累计净值影响</div></article>
+    </div>
+  </section>
+
+  <section class="section chart-card">
+    <div class="section-head"><h2>净值与回撤</h2><p>报告仅展示冻结留出期，曲线不承担统计结论。</p></div>
+    
+    <div class="chart-legend">
+      <span><i class="swatch portfolio"></i>策略净值 1,336,937</span>
+      <span><i class="swatch benchmark"></i>基准净值 1,239,610</span>
+    </div>
+    <svg class="equity-chart" viewBox="0 0 1200 390" role="img" aria-label="留出期策略与基准净值">
+      <line x1="42.0" y1="42.0" x2="1158.0" y2="42.0" class="chart-grid"/><line x1="42.0" y1="118.0" x2="1158.0" y2="118.0" class="chart-grid"/><line x1="42.0" y1="194.0" x2="1158.0" y2="194.0" class="chart-grid"/><line x1="42.0" y1="270.0" x2="1158.0" y2="270.0" class="chart-grid"/><line x1="42.0" y1="346.0" x2="1158.0" y2="346.0" class="chart-grid"/>
+      <polyline points="42.00,291.64 45.14,303.81 48.29,323.27 51.43,316.75 54.57,321.67 57.72,307.12 60.86,304.10 64.01,304.07 67.15,293.13 70.29,290.61 73.44,279.92 76.58,278.58 79.72,272.02 82.87,273.37 86.01,270.49 89.15,276.59 92.30,268.81 95.44,270.97 98.59,269.89 101.73,273.97 104.87,274.00 108.02,267.14 111.16,281.65 114.30,282.73 117.45,284.75 120.59,296.29 123.74,288.68 126.88,285.71 130.02,278.59 133.17,273.53 136.31,269.86 139.45,269.00 142.60,268.82 145.74,270.80 148.88,259.21 152.03,260.56 155.17,258.62 158.32,256.87 161.46,258.17 164.60,255.36 167.75,256.23 170.89,253.28 174.03,259.81 177.18,259.71 180.32,260.88 183.46,254.67 186.61,261.36 189.75,254.66 192.90,249.69 196.04,251.15 199.18,246.90 202.33,241.45 205.47,246.87 208.61,243.56 211.76,243.69 214.90,240.87 218.05,242.17 221.19,242.50 224.33,249.04 227.48,247.53 230.62,247.74 233.76,245.87 236.91,244.72 240.05,247.06 243.19,260.21 246.34,257.37 249.48,259.33 252.63,250.82 255.77,233.05 258.91,227.70 262.06,224.97 265.20,224.26 268.34,226.37 271.49,226.20 274.63,230.60 277.77,240.14 280.92,237.35 284.06,234.51 287.21,234.50 290.35,230.66 293.49,228.15 296.64,225.96 299.78,221.80 302.92,224.58 306.07,220.49 309.21,218.70 312.35,218.37 315.50,213.92 318.64,215.30 321.79,213.46 324.93,218.01 328.07,220.19 331.22,214.20 334.36,218.20 337.50,218.22 340.65,215.43 343.79,218.28 346.94,239.96 350.08,240.57 353.22,232.83 356.37,227.58 359.51,219.56 362.65,219.86 365.80,227.97 368.94,235.73 372.08,238.81 375.23,240.40 378.37,231.42 381.52,227.42 384.66,235.48 387.80,234.36 390.95,245.44 394.09,244.32 397.23,243.51 400.38,230.51 403.52,232.04 406.66,224.83 409.81,218.45 412.95,213.94 416.10,210.01 419.24,212.13 422.38,222.94 425.53,216.20 428.67,219.65 431.81,215.78 434.96,219.50 438.10,225.09 441.25,219.83 444.39,216.96 447.53,214.28 450.68,221.27 453.82,216.36 456.96,216.11 460.11,218.11 463.25,210.45 466.39,210.50 469.54,208.69 472.68,206.92 475.83,210.15 478.97,222.83 482.11,226.46 485.26,229.86 488.40,229.77 491.54,241.24 494.69,229.95 497.83,242.68 500.97,251.38 504.12,243.54 507.26,256.19 510.41,252.34 513.55,271.25 516.69,276.41 519.84,273.10 522.98,282.55 526.12,268.29 529.27,263.89 532.41,271.24 535.55,263.87 538.70,265.38 541.84,264.81 544.99,252.66 548.13,251.56 551.27,259.39 554.42,261.68 557.56,275.33 560.70,271.58 563.85,269.00 566.99,264.40 570.14,297.74 573.28,336.91 576.42,338.34 579.57,348.00 582.71,290.40 585.85,313.34 589.00,301.77 592.14,296.59 595.28,297.72 598.43,312.41 601.57,311.56 604.72,326.69 607.86,310.95 611.00,300.25 614.15,287.02 617.29,282.10 620.43,281.67 623.58,277.78 626.72,276.78 629.86,272.52 633.01,262.49 636.15,266.90 639.30,272.18 642.44,269.22 645.58,265.25 648.73,265.74 651.87,243.36 655.01,238.21 658.16,237.48 661.30,234.52 664.45,229.48 667.59,228.85 670.73,231.66 673.88,243.30 677.02,243.62 680.16,248.38 683.31,233.96 686.45,237.97 689.59,235.10 692.74,235.16 695.88,232.21 699.03,228.03 702.17,227.97 705.31,231.80 708.46,224.38 711.60,223.71 714.74,219.71 717.89,221.73 721.03,218.93 724.17,227.23 727.32,220.41 730.46,226.53 733.61,226.75 736.75,228.33 739.89,221.37 743.04,213.23 746.18,213.23 749.32,207.30 752.47,203.40 755.61,199.53 758.75,200.37 761.90,196.80 765.04,190.49 768.19,196.49 771.33,197.03 774.47,192.45 777.62,190.36 780.76,192.87 783.90,191.80 787.05,194.82 790.19,192.39 793.34,188.30 796.48,188.37 799.62,187.30 802.77,186.81 805.91,180.83 809.05,180.29 812.20,177.22 815.34,177.08 818.48,179.38 821.63,180.34 824.77,183.20 827.92,195.51 831.06,184.35 834.20,188.08 837.35,182.51 840.49,183.12 843.63,177.12 846.78,179.06 849.92,170.28 853.06,167.75 856.21,167.51 859.35,169.79 862.50,169.86 865.64,174.45 868.78,176.35 871.93,179.46 875.07,167.71 878.21,171.06 881.36,167.83 884.50,165.95 887.65,163.46 890.79,168.52 893.93,173.95 897.08,169.97 900.22,163.43 903.36,165.94 906.51,164.28 909.65,162.16 912.79,159.80 915.94,153.06 919.08,153.45 922.23,149.68 925.37,150.72 928.51,151.50 931.66,147.66 934.80,143.72 937.94,140.15 941.09,144.63 944.23,146.93 947.37,150.97 950.52,146.23 953.66,144.10 956.81,140.79 959.95,138.03 963.09,137.53 966.24,137.47 969.38,134.50 972.52,137.62 975.67,132.87 978.81,135.13 981.95,157.31 985.10,144.89 988.24,146.16 991.39,142.91 994.53,148.01 997.67,143.76 1000.82,135.12 1003.96,135.10 1007.10,139.46 1010.25,134.72 1013.39,128.25 1016.54,118.11 1019.68,116.20 1022.82,116.24 1025.97,124.53 1029.11,122.36 1032.25,120.93 1035.40,130.70 1038.54,127.69 1041.68,136.92 1044.83,135.89 1047.97,123.30 1051.12,121.58 1054.26,121.06 1057.40,134.84 1060.55,135.25 1063.69,142.74 1066.83,149.44 1069.98,146.42 1073.12,158.98 1076.26,151.18 1079.41,138.77 1082.55,131.39 1085.70,125.71 1088.84,121.28 1091.98,125.71 1095.13,123.68 1098.27,121.20 1101.41,120.30 1104.56,118.69 1107.70,121.59 1110.85,122.32 1113.99,116.71 1117.13,114.97 1120.28,123.91 1123.42,125.24 1126.56,127.21 1129.71,136.79 1132.85,130.31 1135.99,123.05 1139.14,117.71 1142.28,113.91 1145.43,111.20 1148.57,111.46 1151.71,114.40 1154.86,115.55 1158.00,121.72" class="line benchmark-line"/>
+      <polyline points="42.00,282.46 45.14,282.46 48.29,282.46 51.43,282.46 54.57,282.46 57.72,282.46 60.86,282.46 64.01,282.46 67.15,282.46 70.29,282.46 73.44,282.46 76.58,282.46 79.72,282.46 82.87,282.46 86.01,282.46 89.15,282.46 92.30,282.46 95.44,282.46 98.59,282.46 101.73,282.46 104.87,282.46 108.02,282.46 111.16,283.09 114.30,282.58 117.45,286.78 120.59,294.61 123.74,290.53 126.88,286.80 130.02,286.09 133.17,281.48 136.31,275.52 139.45,272.65 142.60,270.80 145.74,275.82 148.88,268.69 152.03,267.00 155.17,264.47 158.32,263.34 161.46,264.40 164.60,258.35 167.75,258.87 170.89,257.05 174.03,259.39 177.18,258.06 180.32,260.66 183.46,254.47 186.61,260.10 189.75,254.82 192.90,251.93 196.04,256.94 199.18,251.78 202.33,246.23 205.47,247.43 208.61,242.06 211.76,242.79 214.90,241.64 218.05,244.59 221.19,246.85 224.33,249.08 227.48,245.02 230.62,251.34 233.76,248.15 236.91,249.88 240.05,250.19 243.19,247.16 246.34,246.53 249.48,246.58 252.63,236.19 255.77,214.39 258.91,206.20 262.06,200.03 265.20,195.44 268.34,197.76 271.49,197.48 274.63,206.50 277.77,209.61 280.92,206.18 284.06,208.59 287.21,205.88 290.35,193.81 293.49,190.00 296.64,187.96 299.78,179.43 302.92,182.13 306.07,178.57 309.21,181.18 312.35,180.78 315.50,174.34 318.64,175.06 321.79,176.20 324.93,185.31 328.07,191.15 331.22,188.98 334.36,192.84 337.50,193.60 340.65,195.55 343.79,201.66 346.94,216.31 350.08,214.33 353.22,204.55 356.37,203.49 359.51,197.82 362.65,198.27 365.80,204.18 368.94,210.67 372.08,211.46 375.23,212.06 378.37,202.51 381.52,206.81 384.66,208.80 387.80,204.06 390.95,214.84 394.09,212.47 397.23,205.34 400.38,199.15 403.52,190.83 406.66,188.84 409.81,178.45 412.95,179.48 416.10,175.03 419.24,175.51 422.38,186.08 425.53,189.54 428.67,188.04 431.81,174.80 434.96,182.12 438.10,181.70 441.25,186.59 444.39,180.10 447.53,178.01 450.68,173.42 453.82,172.88 456.96,174.33 460.11,175.13 463.25,167.61 466.39,176.15 469.54,167.61 472.68,164.75 475.83,169.26 478.97,179.39 482.11,179.88 485.26,176.24 488.40,174.71 491.54,189.96 494.69,179.06 497.83,187.22 500.97,199.06 504.12,196.30 507.26,213.17 510.41,206.50 513.55,216.35 516.69,227.17 519.84,225.43 522.98,237.37 526.12,222.53 529.27,211.20 532.41,215.89 535.55,207.08 538.70,204.18 541.84,207.15 544.99,193.97 548.13,196.81 551.27,197.51 554.42,198.21 557.56,208.07 560.70,201.80 563.85,199.27 566.99,192.17 570.14,220.83 573.28,261.03 576.42,265.45 579.57,274.05 582.71,223.03 585.85,238.75 589.00,228.98 592.14,223.12 595.28,222.67 598.43,232.48 601.57,228.02 604.72,245.93 607.86,226.85 611.00,217.09 614.15,205.98 617.29,203.94 620.43,200.42 623.58,196.66 626.72,191.93 629.86,188.89 633.01,179.20 636.15,177.85 639.30,180.64 642.44,172.62 645.58,173.85 648.73,179.14 651.87,155.37 655.01,150.18 658.16,154.11 661.30,144.58 664.45,136.20 667.59,135.16 670.73,136.13 673.88,149.31 677.02,150.56 680.16,150.53 683.31,137.84 686.45,141.58 689.59,140.73 692.74,138.16 695.88,135.47 699.03,132.63 702.17,136.14 705.31,135.75 708.46,128.51 711.60,130.72 714.74,132.17 717.89,133.98 721.03,123.61 724.17,130.64 727.32,124.80 730.46,126.01 733.61,123.84 736.75,122.49 739.89,115.84 743.04,106.06 746.18,113.00 749.32,105.42 752.47,99.63 755.61,93.79 758.75,92.27 761.90,94.08 765.04,84.45 768.19,83.71 771.33,90.51 774.47,90.62 777.62,88.69 780.76,94.71 783.90,91.54 787.05,101.61 790.19,98.56 793.34,90.18 796.48,89.73 799.62,89.68 802.77,85.08 805.91,77.39 809.05,83.61 812.20,82.08 815.34,83.84 818.48,82.87 821.63,82.71 824.77,91.44 827.92,97.71 831.06,82.79 834.20,86.71 837.35,93.45 840.49,96.24 843.63,91.86 846.78,91.46 849.92,82.13 853.06,78.12 856.21,80.15 859.35,86.57 862.50,89.04 865.64,87.15 868.78,83.37 871.93,87.64 875.07,81.50 878.21,87.04 881.36,83.76 884.50,82.40 887.65,81.82 890.79,87.09 893.93,92.60 897.08,90.32 900.22,84.30 903.36,82.43 906.51,79.08 909.65,76.12 912.79,64.13 915.94,55.32 919.08,59.44 922.23,60.47 925.37,65.62 928.51,64.74 931.66,64.59 934.80,62.84 937.94,55.28 941.09,55.62 944.23,59.14 947.37,71.92 950.52,63.42 953.66,62.11 956.81,63.70 959.95,62.56 963.09,58.87 966.24,63.40 969.38,63.16 972.52,70.26 975.67,69.94 978.81,71.32 981.95,86.41 985.10,73.76 988.24,67.95 991.39,65.04 994.53,73.84 997.67,70.61 1000.82,67.99 1003.96,64.81 1007.10,70.64 1010.25,71.58 1013.39,64.42 1016.54,59.97 1019.68,65.26 1022.82,73.01 1025.97,71.08 1029.11,69.11 1032.25,71.45 1035.40,76.35 1038.54,66.55 1041.68,72.94 1044.83,59.21 1047.97,55.30 1051.12,55.51 1054.26,50.35 1057.40,62.37 1060.55,67.80 1063.69,81.85 1066.83,85.13 1069.98,85.09 1073.12,98.78 1076.26,84.79 1079.41,80.00 1082.55,67.98 1085.70,62.33 1088.84,59.60 1091.98,66.12 1095.13,65.44 1098.27,65.69 1101.41,65.20 1104.56,62.93 1107.70,63.32 1110.85,63.53 1113.99,52.61 1117.13,48.44 1120.28,58.92 1123.42,54.86 1126.56,60.56 1129.71,65.32 1132.85,61.77 1135.99,54.90 1139.14,47.41 1142.28,47.42 1145.43,43.25 1148.57,42.00 1151.71,45.49 1154.86,48.47 1158.00,56.43" class="line portfolio-line"/>
+      <text x="42.0" y="382" class="axis-label">2024-08-01</text>
+      <text x="1158.0" y="382" text-anchor="end" class="axis-label">2025-12-31</text>
+    </svg>
+    
+    
+    <svg class="drawdown-chart" viewBox="0 0 1200 170" role="img" aria-label="留出期回撤">
+      <line x1="18.0" y1="18.0" x2="1182.0" y2="18.0" class="zero-line"/>
+      <polygon points="18.0,18.0 18.00,18.00 21.28,18.00 24.56,18.00 27.84,18.00 31.12,18.00 34.39,18.00 37.67,18.00 40.95,18.00 44.23,18.00 47.51,18.00 50.79,18.00 54.07,18.00 57.35,18.00 60.63,18.00 63.90,18.00 67.18,18.00 70.46,18.00 73.74,18.00 77.02,18.00 80.30,18.00 83.58,18.00 86.86,18.00 90.14,18.92 93.41,18.18 96.69,24.22 99.97,35.52 103.25,29.63 106.53,24.25 109.81,23.23 113.09,18.00 116.37,18.00 119.65,18.00 122.92,18.00 126.20,25.11 129.48,18.00 132.76,18.00 136.04,18.00 139.32,18.00 142.60,19.48 145.88,18.00 149.15,18.72 152.43,18.00 155.71,21.24 158.99,19.40 162.27,23.01 165.55,18.00 168.83,25.79 172.11,18.48 175.39,18.00 178.66,24.90 181.94,18.00 185.22,18.00 188.50,19.65 191.78,18.00 195.06,18.99 198.34,18.00 201.62,22.02 204.90,25.08 208.17,28.11 211.45,22.60 214.73,31.18 218.01,26.86 221.29,29.20 224.57,29.62 227.85,25.51 231.13,24.65 234.41,24.71 237.68,18.00 240.96,18.00 244.24,18.00 247.52,18.00 250.80,18.00 254.08,20.96 257.36,20.61 260.64,32.11 263.92,36.08 267.19,31.70 270.47,34.77 273.75,31.32 277.03,18.00 280.31,18.00 283.59,18.00 286.87,18.00 290.15,21.38 293.43,18.00 296.70,21.26 299.98,20.76 303.26,18.00 306.54,18.89 309.82,20.30 313.10,31.61 316.38,38.86 319.66,36.17 322.94,40.96 326.21,41.90 329.49,44.32 332.77,51.90 336.05,70.09 339.33,67.62 342.61,55.49 345.89,54.18 349.17,47.14 352.45,47.70 355.72,55.03 359.00,63.08 362.28,64.07 365.56,64.81 368.84,52.95 372.12,58.30 375.40,60.77 378.68,54.88 381.95,68.26 385.23,65.32 388.51,56.47 391.79,48.79 395.07,38.46 398.35,35.99 401.63,23.10 404.91,24.37 408.19,18.85 411.46,19.45 414.74,32.57 418.02,36.86 421.30,35.00 424.58,18.57 427.86,27.66 431.14,27.14 434.42,33.20 437.70,25.14 440.97,22.56 444.25,18.00 447.53,18.00 450.81,19.80 454.09,20.79 457.37,18.00 460.65,28.51 463.93,18.00 467.21,18.00 470.48,23.54 473.76,35.95 477.04,36.55 480.32,32.09 483.60,30.21 486.88,48.91 490.16,35.55 493.44,45.56 496.72,60.06 499.99,56.68 503.27,77.36 506.55,69.19 509.83,81.26 513.11,94.53 516.39,92.40 519.67,107.03 522.95,88.84 526.23,74.95 529.50,80.70 532.78,69.89 536.06,66.34 539.34,69.99 542.62,53.82 545.90,57.31 549.18,58.17 552.46,59.03 555.74,71.11 559.01,63.43 562.29,60.33 565.57,51.62 568.85,86.75 572.13,136.04 575.41,141.46 578.69,152.00 581.97,89.45 585.25,108.73 588.52,96.74 591.80,89.56 595.08,89.01 598.36,101.04 601.64,95.57 604.92,117.52 608.20,94.14 611.48,82.17 614.75,68.55 618.03,66.04 621.31,61.73 624.59,57.12 627.87,51.33 631.15,47.60 634.43,35.71 637.71,34.06 640.99,37.49 644.26,27.65 647.54,29.16 650.82,35.64 654.10,18.00 657.38,18.00 660.66,22.73 663.94,18.00 667.22,18.00 670.50,18.00 673.77,19.15 677.05,34.73 680.33,36.20 683.61,36.16 686.89,21.17 690.17,25.59 693.45,24.59 696.73,21.55 700.01,18.38 703.28,18.00 706.56,22.14 709.84,21.68 713.12,18.00 716.40,20.59 719.68,22.29 722.96,24.41 726.24,18.00 729.52,26.19 732.79,19.39 736.07,20.80 739.35,18.27 742.63,18.00 745.91,18.00 749.19,18.00 752.47,25.92 755.75,18.00 759.03,18.00 762.30,18.00 765.58,18.00 768.86,20.03 772.14,18.00 775.42,18.00 778.70,25.55 781.98,25.68 785.26,23.53 788.54,30.23 791.81,26.71 795.09,37.90 798.37,34.51 801.65,25.19 804.93,24.69 808.21,24.64 811.49,19.52 814.77,18.00 818.05,24.87 821.32,23.18 824.60,25.12 827.88,24.05 831.16,23.87 834.44,33.51 837.72,40.43 841.00,23.96 844.28,28.30 847.55,35.73 850.83,38.81 854.11,33.97 857.39,33.54 860.67,23.24 863.95,18.82 867.23,21.06 870.51,28.14 873.79,30.86 877.06,28.78 880.34,24.61 883.62,29.31 886.90,22.54 890.18,28.66 893.46,25.04 896.74,23.54 900.02,22.90 903.30,28.71 906.57,34.79 909.85,32.28 913.13,25.64 916.41,23.57 919.69,19.87 922.97,18.00 926.25,18.00 929.53,18.00 932.81,22.44 936.08,23.55 939.36,29.09 942.64,28.14 945.92,27.98 949.20,26.10 952.48,18.00 955.76,18.36 959.04,22.15 962.32,35.91 965.59,26.75 968.87,25.35 972.15,27.06 975.43,25.84 978.71,21.86 981.99,26.74 985.27,26.48 988.55,34.12 991.83,33.77 995.10,35.26 998.38,51.51 1001.66,37.89 1004.94,31.64 1008.22,28.50 1011.50,37.97 1014.78,34.50 1018.06,31.68 1021.34,28.25 1024.61,34.53 1027.89,35.55 1031.17,27.84 1034.45,23.05 1037.73,28.74 1041.01,37.08 1044.29,35.01 1047.57,32.89 1050.85,35.41 1054.12,40.68 1057.40,30.13 1060.68,37.00 1063.96,22.23 1067.24,18.01 1070.52,18.24 1073.80,18.00 1077.08,30.88 1080.35,36.69 1083.63,51.73 1086.91,55.24 1090.19,55.20 1093.47,69.85 1096.75,54.88 1100.03,49.75 1103.31,36.88 1106.59,30.83 1109.86,27.91 1113.14,34.89 1116.42,34.16 1119.70,34.43 1122.98,33.90 1126.26,31.47 1129.54,31.89 1132.82,32.12 1136.10,20.43 1139.37,18.00 1142.65,29.20 1145.93,24.86 1149.21,30.95 1152.49,36.04 1155.77,32.24 1159.05,24.90 1162.33,18.00 1165.61,18.01 1168.88,18.00 1172.16,18.00 1175.44,21.71 1178.72,24.86 1182.00,33.30 1182.0,18.0" class="drawdown-area"/>
+      <polyline points="18.00,18.00 21.28,18.00 24.56,18.00 27.84,18.00 31.12,18.00 34.39,18.00 37.67,18.00 40.95,18.00 44.23,18.00 47.51,18.00 50.79,18.00 54.07,18.00 57.35,18.00 60.63,18.00 63.90,18.00 67.18,18.00 70.46,18.00 73.74,18.00 77.02,18.00 80.30,18.00 83.58,18.00 86.86,18.00 90.14,18.92 93.41,18.18 96.69,24.22 99.97,35.52 103.25,29.63 106.53,24.25 109.81,23.23 113.09,18.00 116.37,18.00 119.65,18.00 122.92,18.00 126.20,25.11 129.48,18.00 132.76,18.00 136.04,18.00 139.32,18.00 142.60,19.48 145.88,18.00 149.15,18.72 152.43,18.00 155.71,21.24 158.99,19.40 162.27,23.01 165.55,18.00 168.83,25.79 172.11,18.48 175.39,18.00 178.66,24.90 181.94,18.00 185.22,18.00 188.50,19.65 191.78,18.00 195.06,18.99 198.34,18.00 201.62,22.02 204.90,25.08 208.17,28.11 211.45,22.60 214.73,31.18 218.01,26.86 221.29,29.20 224.57,29.62 227.85,25.51 231.13,24.65 234.41,24.71 237.68,18.00 240.96,18.00 244.24,18.00 247.52,18.00 250.80,18.00 254.08,20.96 257.36,20.61 260.64,32.11 263.92,36.08 267.19,31.70 270.47,34.77 273.75,31.32 277.03,18.00 280.31,18.00 283.59,18.00 286.87,18.00 290.15,21.38 293.43,18.00 296.70,21.26 299.98,20.76 303.26,18.00 306.54,18.89 309.82,20.30 313.10,31.61 316.38,38.86 319.66,36.17 322.94,40.96 326.21,41.90 329.49,44.32 332.77,51.90 336.05,70.09 339.33,67.62 342.61,55.49 345.89,54.18 349.17,47.14 352.45,47.70 355.72,55.03 359.00,63.08 362.28,64.07 365.56,64.81 368.84,52.95 372.12,58.30 375.40,60.77 378.68,54.88 381.95,68.26 385.23,65.32 388.51,56.47 391.79,48.79 395.07,38.46 398.35,35.99 401.63,23.10 404.91,24.37 408.19,18.85 411.46,19.45 414.74,32.57 418.02,36.86 421.30,35.00 424.58,18.57 427.86,27.66 431.14,27.14 434.42,33.20 437.70,25.14 440.97,22.56 444.25,18.00 447.53,18.00 450.81,19.80 454.09,20.79 457.37,18.00 460.65,28.51 463.93,18.00 467.21,18.00 470.48,23.54 473.76,35.95 477.04,36.55 480.32,32.09 483.60,30.21 486.88,48.91 490.16,35.55 493.44,45.56 496.72,60.06 499.99,56.68 503.27,77.36 506.55,69.19 509.83,81.26 513.11,94.53 516.39,92.40 519.67,107.03 522.95,88.84 526.23,74.95 529.50,80.70 532.78,69.89 536.06,66.34 539.34,69.99 542.62,53.82 545.90,57.31 549.18,58.17 552.46,59.03 555.74,71.11 559.01,63.43 562.29,60.33 565.57,51.62 568.85,86.75 572.13,136.04 575.41,141.46 578.69,152.00 581.97,89.45 585.25,108.73 588.52,96.74 591.80,89.56 595.08,89.01 598.36,101.04 601.64,95.57 604.92,117.52 608.20,94.14 611.48,82.17 614.75,68.55 618.03,66.04 621.31,61.73 624.59,57.12 627.87,51.33 631.15,47.60 634.43,35.71 637.71,34.06 640.99,37.49 644.26,27.65 647.54,29.16 650.82,35.64 654.10,18.00 657.38,18.00 660.66,22.73 663.94,18.00 667.22,18.00 670.50,18.00 673.77,19.15 677.05,34.73 680.33,36.20 683.61,36.16 686.89,21.17 690.17,25.59 693.45,24.59 696.73,21.55 700.01,18.38 703.28,18.00 706.56,22.14 709.84,21.68 713.12,18.00 716.40,20.59 719.68,22.29 722.96,24.41 726.24,18.00 729.52,26.19 732.79,19.39 736.07,20.80 739.35,18.27 742.63,18.00 745.91,18.00 749.19,18.00 752.47,25.92 755.75,18.00 759.03,18.00 762.30,18.00 765.58,18.00 768.86,20.03 772.14,18.00 775.42,18.00 778.70,25.55 781.98,25.68 785.26,23.53 788.54,30.23 791.81,26.71 795.09,37.90 798.37,34.51 801.65,25.19 804.93,24.69 808.21,24.64 811.49,19.52 814.77,18.00 818.05,24.87 821.32,23.18 824.60,25.12 827.88,24.05 831.16,23.87 834.44,33.51 837.72,40.43 841.00,23.96 844.28,28.30 847.55,35.73 850.83,38.81 854.11,33.97 857.39,33.54 860.67,23.24 863.95,18.82 867.23,21.06 870.51,28.14 873.79,30.86 877.06,28.78 880.34,24.61 883.62,29.31 886.90,22.54 890.18,28.66 893.46,25.04 896.74,23.54 900.02,22.90 903.30,28.71 906.57,34.79 909.85,32.28 913.13,25.64 916.41,23.57 919.69,19.87 922.97,18.00 926.25,18.00 929.53,18.00 932.81,22.44 936.08,23.55 939.36,29.09 942.64,28.14 945.92,27.98 949.20,26.10 952.48,18.00 955.76,18.36 959.04,22.15 962.32,35.91 965.59,26.75 968.87,25.35 972.15,27.06 975.43,25.84 978.71,21.86 981.99,26.74 985.27,26.48 988.55,34.12 991.83,33.77 995.10,35.26 998.38,51.51 1001.66,37.89 1004.94,31.64 1008.22,28.50 1011.50,37.97 1014.78,34.50 1018.06,31.68 1021.34,28.25 1024.61,34.53 1027.89,35.55 1031.17,27.84 1034.45,23.05 1037.73,28.74 1041.01,37.08 1044.29,35.01 1047.57,32.89 1050.85,35.41 1054.12,40.68 1057.40,30.13 1060.68,37.00 1063.96,22.23 1067.24,18.01 1070.52,18.24 1073.80,18.00 1077.08,30.88 1080.35,36.69 1083.63,51.73 1086.91,55.24 1090.19,55.20 1093.47,69.85 1096.75,54.88 1100.03,49.75 1103.31,36.88 1106.59,30.83 1109.86,27.91 1113.14,34.89 1116.42,34.16 1119.70,34.43 1122.98,33.90 1126.26,31.47 1129.54,31.89 1132.82,32.12 1136.10,20.43 1139.37,18.00 1142.65,29.20 1145.93,24.86 1149.21,30.95 1152.49,36.04 1155.77,32.24 1159.05,24.90 1162.33,18.00 1165.61,18.01 1168.88,18.00 1172.16,18.00 1175.44,21.71 1178.72,24.86 1182.00,33.30" class="drawdown-line"/>
+    </svg>
+    
+  </section>
+
+  <section class="section">
+    <div class="section-head"><h2>证据刻度尺</h2><p>确认性结论必须同时通过所有门槛；单个漂亮指标不能覆盖失败项。</p></div>
+    <div class="evidence-grid">
+      <div class="evidence-rail">
+    <article class="gate pass">
+      <div class="gate-mark"><span></span></div>
+      <div class="gate-body">
+        <div class="gate-top">
+          <h3>产物可复算</h3>
+          <span class="gate-status">通过</span>
+        </div>
+        <div class="gate-reading">
+          <strong>16/16 项验收通过</strong>
+          <span>要求 全部验收检查通过</span>
+        </div>
+        <p>数据快照、协议、账本和统计结果必须能够从保存的产物重新计算。</p>
+      </div>
+    </article>
+    
+    <article class="gate pass">
+      <div class="gate-mark"><span></span></div>
+      <div class="gate-body">
+        <div class="gate-top">
+          <h3>主指标下界</h3>
+          <span class="gate-status">通过</span>
+        </div>
+        <div class="gate-reading">
+          <strong>0.307</strong>
+          <span>要求 &gt; 0.000</span>
+        </div>
+        <p>使用 21 交易日区块、2,000 次固定种子 Bootstrap 的单侧 95% 下界。</p>
+      </div>
+    </article>
+    
+    <article class="gate fail">
+      <div class="gate-mark"><span></span></div>
+      <div class="gate-body">
+        <div class="gate-top">
+          <h3>Deflated Sharpe</h3>
+          <span class="gate-status">未通过</span>
+        </div>
+        <div class="gate-reading">
+          <strong>69.5%</strong>
+          <span>要求 &gt;= 95.0%</span>
+        </div>
+        <p>试验族实际尝试 5 次，修正多重尝试后的过拟合概率。</p>
+      </div>
+    </article>
+    
+    <article class="gate pass">
+      <div class="gate-mark"><span></span></div>
+      <div class="gate-body">
+        <div class="gate-top">
+          <h3>净收益</h3>
+          <span class="gate-status">通过</span>
+        </div>
+        <div class="gate-reading">
+          <strong>33.7%</strong>
+          <span>要求 &gt; 0.0%</span>
+        </div>
+        <p>留出期、统一优化器和成本账本后的净收益。</p>
+      </div>
+    </article>
+    
+    <article class="gate fail">
+      <div class="gate-mark"><span></span></div>
+      <div class="gate-body">
+        <div class="gate-top">
+          <h3>预注册因子证据</h3>
+          <span class="gate-status">未通过</span>
+        </div>
+        <div class="gate-reading">
+          <strong>0/13 个因子</strong>
+          <span>要求 方向一致且通过 FDR</span>
+        </div>
+        <p>因子覆盖率不替代有效性；必须同时满足预期方向与 Benjamini-Hochberg FDR。</p>
+      </div>
+    </article>
+    </div>
+      <aside class="decision-card">
+        <h3>最终拒绝</h3>
+        <p>该确认性研究已经关闭，当前留出期不得继续用于 v1 调参或确认性重跑。</p>
+        <ul><li>Deflated Sharpe 概率低于预注册要求。</li><li>仍有方法学阻断项未解决。</li><li>预注册因子均未同时通过预期方向与 FDR 检验。</li></ul>
+      </aside>
+    </div>
+  </section>
+
+  <section class="section two-col">
+    <article class="card">
+      <div class="section-head"><h2>Bootstrap 区间</h2></div>
+      <div class="table-wrap"><table><thead><tr><th>指标</th><th>估计值</th><th>双侧下界</th><th>双侧上界</th><th>单侧下界</th></tr></thead><tbody><tr><td>sharpe_ratio</td><td>1.432</td><td>0.110</td><td>3.238</td><td>0.307</td></tr><tr><td>alpha_annualized</td><td>0.096</td><td>-0.015</td><td>0.221</td><td>0.008</td></tr><tr><td>max_drawdown</td><td>-0.139</td><td>-0.193</td><td>-0.054</td><td>-0.177</td></tr></tbody></table></div>
+    </article>
+    <article class="card">
+      <div class="section-head"><h2>风格回归</h2><p>覆盖率 100.0% · R² 0.717</p></div>
+      <div class="table-wrap"><table><thead><tr><th>因子</th><th>系数</th><th>HAC t</th><th>p-value</th></tr></thead><tbody><tr><td>alpha</td><td>0.068</td><td>0.975</td><td>0.330</td></tr><tr><td>Mkt-RF</td><td>0.743</td><td>14.603</td><td>0.000</td></tr><tr><td>SMB</td><td>-0.030</td><td>-0.482</td><td>0.630</td></tr><tr><td>HML</td><td>0.170</td><td>3.777</td><td>0.000</td></tr><tr><td>RMW</td><td>0.025</td><td>0.436</td><td>0.663</td></tr><tr><td>CMA</td><td>0.080</td><td>1.160</td><td>0.246</td></tr><tr><td>Mom</td><td>-0.020</td><td>-0.477</td><td>0.633</td></tr></tbody></table></div>
+    </article>
+  </section>
+
+  <section class="section card">
+    <div class="section-head"><h2>预注册因子证据</h2><p>0/13 个因子同时满足方向与 FDR。条形长度表示绝对 IC，不代表显著性。</p></div>
+    
+            <div class="factor-row">
+              <div class="factor-name">accruals</div>
+              <div class="factor-bar"><span class="unsupported" style="width:9.0%"></span></div>
+              <div class="factor-ic">+0.008</div>
+              <div class="factor-q">q=0.777</div>
+              <div class="factor-state unsupported">方向不符</div>
+            </div>
+            
+            <div class="factor-row">
+              <div class="factor-name">beta_to_spy</div>
+              <div class="factor-bar"><span class="unsupported" style="width:89.9%"></span></div>
+              <div class="factor-ic">-0.082</div>
+              <div class="factor-q">q=0.589</div>
+              <div class="factor-state unsupported">方向不符</div>
+            </div>
+            
+            <div class="factor-row">
+              <div class="factor-name">book_to_market</div>
+              <div class="factor-bar"><span class="direction" style="width:37.8%"></span></div>
+              <div class="factor-ic">+0.035</div>
+              <div class="factor-q">q=0.589</div>
+              <div class="factor-state direction">方向一致</div>
+            </div>
+            
+            <div class="factor-row">
+              <div class="factor-name">earnings_yield</div>
+              <div class="factor-bar"><span class="direction" style="width:25.8%"></span></div>
+              <div class="factor-ic">+0.024</div>
+              <div class="factor-q">q=0.409</div>
+              <div class="factor-state direction">方向一致</div>
+            </div>
+            
+            <div class="factor-row">
+              <div class="factor-name">free_cash_flow_yield</div>
+              <div class="factor-bar"><span class="direction" style="width:23.3%"></span></div>
+              <div class="factor-ic">+0.021</div>
+              <div class="factor-q">q=0.653</div>
+              <div class="factor-state direction">方向一致</div>
+            </div>
+            
+            <div class="factor-row">
+              <div class="factor-name">max_drawdown_252d</div>
+              <div class="factor-bar"><span class="direction" style="width:92.6%"></span></div>
+              <div class="factor-ic">+0.085</div>
+              <div class="factor-q">q=0.487</div>
+              <div class="factor-state direction">方向一致</div>
+            </div>
+            
+            <div class="factor-row">
+              <div class="factor-name">momentum_12_1</div>
+              <div class="factor-bar"><span class="unsupported" style="width:2.0%"></span></div>
+              <div class="factor-ic">-0.002</div>
+              <div class="factor-q">q=0.589</div>
+              <div class="factor-state unsupported">方向不符</div>
+            </div>
+            
+            <div class="factor-row">
+              <div class="factor-name">momentum_3m</div>
+              <div class="factor-bar"><span class="direction" style="width:33.3%"></span></div>
+              <div class="factor-ic">+0.030</div>
+              <div class="factor-q">q=0.589</div>
+              <div class="factor-state direction">方向一致</div>
+            </div>
+            
+            <div class="factor-row">
+              <div class="factor-name">momentum_6m</div>
+              <div class="factor-bar"><span class="direction" style="width:31.6%"></span></div>
+              <div class="factor-ic">+0.029</div>
+              <div class="factor-q">q=0.777</div>
+              <div class="factor-state direction">方向一致</div>
+            </div>
+            
+            <div class="factor-row">
+              <div class="factor-name">realized_vol_252d</div>
+              <div class="factor-bar"><span class="unsupported" style="width:89.2%"></span></div>
+              <div class="factor-ic">-0.081</div>
+              <div class="factor-q">q=0.589</div>
+              <div class="factor-state unsupported">方向不符</div>
+            </div>
+            
+            <div class="factor-row">
+              <div class="factor-name">realized_vol_60d</div>
+              <div class="factor-bar"><span class="unsupported" style="width:100.0%"></span></div>
+              <div class="factor-ic">-0.091</div>
+              <div class="factor-q">q=0.589</div>
+              <div class="factor-state unsupported">方向不符</div>
+            </div>
+            
+            <div class="factor-row">
+              <div class="factor-name">roe</div>
+              <div class="factor-bar"><span class="unsupported" style="width:4.8%"></span></div>
+              <div class="factor-ic">-0.004</div>
+              <div class="factor-q">q=0.368</div>
+              <div class="factor-state unsupported">方向不符</div>
+            </div>
+            
+            <div class="factor-row">
+              <div class="factor-name">sales_yield</div>
+              <div class="factor-bar"><span class="direction" style="width:35.7%"></span></div>
+              <div class="factor-ic">+0.033</div>
+              <div class="factor-q">q=0.084</div>
+              <div class="factor-state direction">方向一致</div>
+            </div>
+            
+  </section>
+
+  <section class="section two-col">
+    <article class="card">
+      <div class="section-head"><h2>验收检查</h2><p>16/16 通过</p></div>
+      <div class="table-wrap"><table><thead><tr><th>检查项</th><th>通过</th><th>说明</th></tr></thead><tbody><tr><td>research_identity_frozen</td><td>True</td><td>code=git:fde60533f218c73a15874bd47000f5eae5025f0c:dirty:28886f33220009f6d80acb0fb9c8827a42d3a87141093873463c30f941b6f965; environment=57d09f6e5fa406d1a10bd8fc35ee099ec935d8c88195e1002f6dec4e06a45eff</td></tr><tr><td>confirmatory_artifacts_complete</td><td>True</td><td>[]</td></tr><tr><td>source_run_valid</td><td>True</td><td>valid</td></tr><tr><td>preregistered_protocol_identity</td><td>True</td><td>stage=confirmatory</td></tr><tr><td>holdout_label_gap</td><td>True</td><td>business_days=23</td></tr><tr><td>data_snapshot_identity</td><td>True</td><td>5035725ce92855813f87f3b2a8c51a655c2f9badc5054326dc0a4099c2d9ac4d</td></tr><tr><td>complete_research_snapshot</td><td>True</td><td>files=7</td></tr><tr><td>factor_evidence_holdout_scope</td><td>True</td><td>factors=2024-08-30..2025-12-31; prices_through=2025-12-31</td></tr><tr><td>child_run_identity</td><td>True</td><td>children=8</td></tr><tr><td>robustness_config_diffs</td><td>True</td><td>rows=12</td></tr><tr><td>shared_holdout_ledger_complete</td><td>True</td><td>[]</td></tr><tr><td>bootstrap_reproducible</td><td>True</td><td>samples=2000</td></tr><tr><td>deflated_sharpe_reproducible</td><td>True</td><td>trials=5</td></tr><tr><td>style_regression_reproducible</td><td>True</td><td>coverage=1.0</td></tr><tr><td>factor_evidence_reproducible</td><td>True</td><td>factors=13</td></tr><tr><td>research_decision_reproducible</td><td>True</td><td>rejected</td></tr></tbody></table></div>
+    </article>
+    <article class="card">
+      <div class="section-head"><h2>可复现身份</h2><p>复现实验必须匹配协议、spec 与数据快照。</p></div>
+      <div class="provenance">
+        <div class="hash"><span>Data snapshot</span><code>5035725ce92855813f87f3b2a8c51a655c2f9badc5054326dc0a4099c2d9ac4d</code></div>
+        <div class="hash"><span>Spec hash</span><code>4c385ec2d158a4a4259594f962d8bdd03820ad552703bda0d23daa33aeb4a637</code></div>
+      </div>
+      <div class="links">
+        <a href="../../runs/20260615T132128Z-experiment-346a7b28/manifest.json">源 Manifest</a>
+        <a href="../../runs/20260615T132128Z-experiment-346a7b28/research_decision.json">研究决策 JSON</a>
+        <a href="../../runs/20260615T132128Z-experiment-346a7b28/holdout_evaluation/rule_score/metrics.csv">留出期指标 CSV</a>
+        <a href="../../runs/20260615T132524Z-acceptance-3588cade/acceptance_checks.csv">验收检查 CSV</a>
+      </div>
+    </article>
+  </section>
+
+  <footer>
+    <span>QuantAI Research System · Artifact-backed report</span>
+    <span>不构成投资建议 · 结论以保存的研究协议和统计产物为准</span>
+  </footer>
+</main>
+</body>
+</html>

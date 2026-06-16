@@ -1,0 +1,9 @@
+{
+  "full_sample_annualized_residual_alpha": -2.2299086734426414e-13,
+  "full_sample_t_stat": -3.4008130237129725e-12,
+  "full_sample_p_value": 0.9999999999972865,
+  "rolling_windows": [
+    63,
+    126
+  ]
+}

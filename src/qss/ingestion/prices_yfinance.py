@@ -251,6 +251,15 @@ def _persist_prices(
         ["symbol", "date"],
         {"yfinance": 100, "stooq": 80, "synthetic_fallback": 0},
     )
+    persisted_path = Path(config.paths.silver_data) / "prices" / "prices_daily.parquet"
+    persisted = read_parquet(persisted_path)
+    if not persisted.empty and {"symbol", "date", "adj_close"}.issubset(persisted):
+        persisted = persisted.copy()
+        persisted["date"] = pd.to_datetime(persisted["date"]).dt.tz_localize(None)
+        persisted["adj_close"] = pd.to_numeric(persisted["adj_close"], errors="coerce")
+        persisted = persisted.sort_values(["symbol", "date"])
+        persisted["return_1d"] = persisted.groupby("symbol")["adj_close"].pct_change()
+        write_parquet(persisted, persisted_path)
     write_parquet(
         seed_master,
         Path(config.paths.silver_data) / "universe" / "security_master.parquet",

@@ -8,6 +8,7 @@ from qss.reporting.comprehensive_report import (
     find_latest_research_run,
     generate_comprehensive_report,
 )
+from qss.reporting.report_diff import compare_report_payloads, write_report_diff
 
 
 def _write_json(path: Path, payload: object) -> None:
@@ -39,6 +40,8 @@ def _make_experiment(reports: Path, run_id: str, created_at: str, status: str) -
             "data_snapshot_id": "snapshot-id",
             "spec_hash": "spec-hash",
             "trial_number": 2,
+            "code_dirty": True,
+            "code_version": "git:abc:dirty:def",
             "research_protocol": protocol,
         },
     )
@@ -212,6 +215,8 @@ def test_comprehensive_report_selects_latest_valid_research_result(tmp_path):
     assert payload["source_run_id"] == valid.name
     assert payload["metrics"]["net_total_return"] == 0.12
     assert payload["evidence_status"] == "rejected"
+    assert payload["code_dirty"] is True
+    assert "Dirty git workspace" in report
     assert (
         "../../runs/20260101T000000Z-experiment-valid/"
         "holdout_evaluation/rule_score/metrics.csv"
@@ -246,3 +251,42 @@ def test_comprehensive_report_uses_full_backtest_when_no_experiment_exists(tmp_p
 
     assert report.count('<span class="gate-status">未评估</span>') == 3
     assert "该运行未生成确认性 Bootstrap、Deflated Sharpe 和预注册因子证据。" in report
+
+
+def test_report_diff_compares_identity_and_metric_delta(tmp_path):
+    left = {
+        "source_run_id": "run-a",
+        "evidence_status": "rejected",
+        "data_snapshot_id": "snapshot-a",
+        "spec_hash": "spec-a",
+        "trial_number": 1,
+        "trial_budget": 2,
+        "protocol": {"study_id": "study-a", "holdout_start": "2024-01-01"},
+        "metrics": {"net_total_return": 0.10, "sharpe_ratio": 0.8},
+    }
+    right = {
+        **left,
+        "source_run_id": "run-b",
+        "evidence_status": "rejected_final",
+        "holdout_inspection_count": 2,
+        "metrics": {"net_total_return": 0.13, "sharpe_ratio": 0.7},
+    }
+
+    diff = compare_report_payloads(left, right)
+    returns = next(
+        row for row in diff["metrics"] if row["metric"] == "net_total_return"
+    )
+    assert round(returns["delta"], 6) == 0.03
+    assert diff["identity"]["evidence_status"]["changed"]
+
+    left_path = tmp_path / "left.json"
+    right_path = tmp_path / "right.json"
+    _write_json(left_path, left)
+    _write_json(right_path, right)
+    markdown_path, json_path = write_report_diff(
+        left_path,
+        right_path,
+        tmp_path / "diff",
+    )
+    assert markdown_path.exists()
+    assert json.loads(json_path.read_text(encoding="utf-8"))["right_report"] == "run-b"

@@ -342,6 +342,11 @@ def _status_copy(status: str) -> tuple[str, str, str]:
             "rejected",
             "运行有效且收益为正，但确认性证据未达到预注册标准，当前不能把结果表述为已验证 alpha。",
         ),
+        "rejected_final": (
+            "最终拒绝",
+            "rejected",
+            "该确认性研究已经关闭，当前留出期不得继续用于 v1 调参或确认性重跑。",
+        ),
         "inconclusive": (
             "证据不足",
             "inconclusive",
@@ -380,6 +385,14 @@ def _render_html(payload: dict[str, Any], daily: pd.DataFrame, factors: pd.DataF
     acceptance = pd.DataFrame(payload["acceptance_checks"])
     evidence_label, evidence_class, evidence_copy = _status_copy(payload["evidence_status"])
     artifact_valid = payload["artifact_status"] == "valid"
+    dirty_warning = ""
+    if payload.get("code_dirty"):
+        dirty_warning = f"""
+  <section class="workspace-warning">
+    <strong>Dirty git workspace</strong>
+    <span>该确认性报告的代码身份包含 dirty 标记。未来确认性研究默认要求 clean commit；本报告仅保留为可追溯历史产物。Code: {html.escape(str(payload.get("code_version") or "unknown"))}</span>
+  </section>
+        """
 
     primary = bootstrap.loc[bootstrap.get("metric", pd.Series(dtype=str)) == protocol.get("primary_metric")]
     primary_lower = (
@@ -389,6 +402,18 @@ def _render_html(payload: dict[str, Any], daily: pd.DataFrame, factors: pd.DataF
     dsr = payload["deflated_sharpe"]
     dsr_probability = dsr.get("probability")
     dsr_required = decision.get("required_deflated_sharpe_probability", 0.95)
+    trial_number = payload.get("trial_number")
+    trial_budget = payload.get("trial_budget")
+    trial_label = str(trial_number or "N/A")
+    if trial_budget:
+        trial_label = f"{trial_label}/{trial_budget}"
+    holdout_inspection_count = payload.get("holdout_inspection_count") or dsr.get(
+        "trial_count"
+    )
+    try:
+        inspection_label = str(int(float(holdout_inspection_count)))
+    except (TypeError, ValueError):
+        inspection_label = "N/A"
     factor_supported = int(
         (
             factors.get("fdr_significant", pd.Series(dtype=bool)).astype(bool)
@@ -544,8 +569,15 @@ def _render_html(payload: dict[str, Any], daily: pd.DataFrame, factors: pd.DataF
     .verdict.supported strong {{ color: #bff4dd; }}
     .verdict.inconclusive strong {{ color: #ffe0a3; }}
     .verdict small {{ color: #dce6ff; }}
+    .workspace-warning {{
+      display: grid; grid-template-columns: 210px 1fr; gap: 16px; align-items: center;
+      margin: 18px 0; padding: 15px 18px; border-radius: 12px;
+      color: #6f3b00; background: #fff2ce; border: 1px solid #f0c56d;
+    }}
+    .workspace-warning strong {{ font-size: 14px; text-transform: uppercase; letter-spacing: .08em; }}
+    .workspace-warning span {{ font-size: 12px; line-height: 1.45; overflow-wrap: anywhere; }}
     .meta-strip {{
-      display: grid; grid-template-columns: repeat(5, 1fr); margin: 18px 0 34px;
+      display: grid; grid-template-columns: repeat(6, 1fr); margin: 18px 0 34px;
       background: var(--surface); border: 1px solid var(--line); border-radius: 16px;
       box-shadow: 0 8px 28px rgba(28, 46, 91, .06); overflow: hidden;
     }}
@@ -670,9 +702,11 @@ def _render_html(payload: dict[str, Any], daily: pd.DataFrame, factors: pd.DataF
     <div class="verdict {evidence_class}">
       <span class="verdict-label">研究结论</span>
       <strong>{evidence_label}</strong>
-      <small>产物状态：{"有效" if artifact_valid else "无效"} · 试验 #{payload.get("trial_number") or "N/A"}</small>
+      <small>产物状态：{"有效" if artifact_valid else "无效"} · 试验 {html.escape(trial_label)} · Holdout 查看 {html.escape(inspection_label)} 次 · 有效产物不等于研究支持或交易批准</small>
     </div>
   </section>
+
+  {dirty_warning}
 
   <section class="meta-strip">
     <div class="meta"><span>Study</span><strong title="{html.escape(study_id)}">{html.escape(study_id)}</strong></div>
@@ -680,6 +714,7 @@ def _render_html(payload: dict[str, Any], daily: pd.DataFrame, factors: pd.DataF
     <div class="meta"><span>Holdout</span><strong>{html.escape(str(protocol.get("holdout_start", "N/A")))} 至 {html.escape(str(protocol.get("holdout_end", "N/A")))}</strong></div>
     <div class="meta"><span>Data cutoff</span><strong>{html.escape(str(payload.get("data_cutoff") or "N/A"))}</strong></div>
     <div class="meta"><span>Model</span><strong>{html.escape(str(decision.get("selected_model") or payload.get("model_type") or "rule_score"))}</strong></div>
+    <div class="meta"><span>Trials / Budget</span><strong>{html.escape(trial_label)}</strong></div>
   </section>
 
   <section class="section">
@@ -819,11 +854,22 @@ def generate_comprehensive_report(
         "source_run_path": str(source_root),
         "run_type": manifest.get("run_type"),
         "artifact_status": manifest.get("status", "unknown"),
+        "code_dirty": manifest.get("code_dirty"),
+        "code_version": manifest.get("code_version"),
         "evidence_status": decision.get(
             "status",
             manifest.get("evidence_status") or "exploratory",
         ),
+        "study_status": decision.get(
+            "study_status",
+            manifest.get("study_status") or protocol.get("study_status"),
+        ),
         "trial_number": manifest.get("trial_number"),
+        "trial_budget": decision.get("trial_budget")
+        or manifest.get("trial_budget")
+        or protocol.get("trial_budget"),
+        "holdout_inspection_count": deflated_sharpe.get("trial_count")
+        or manifest.get("trial_number"),
         "data_cutoff": manifest.get("data_cutoff"),
         "data_snapshot_id": manifest.get("data_snapshot_id"),
         "spec_hash": manifest.get("spec_hash"),

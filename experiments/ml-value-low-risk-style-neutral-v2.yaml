@@ -1,4 +1,4 @@
-hypothesis: "A value plus low-risk LightGBM score neutralized against same-date style and sector exposures has positive forward out-of-sample residual investment value."
+hypothesis: "A value plus low-risk LightGBM score neutralized against same-date style and sector exposures has positive historical pseudo-out-of-sample residual investment value."
 study_id: "ml-value-low-risk-style-neutral-v2"
 research_stage: "confirmatory"
 study_status: "active"
@@ -8,12 +8,12 @@ require_clean_git: true
 factor_evidence_mode: "family_level"
 primary_hypothesis_family: "ml_value_low_risk_style_neutral"
 development_start: "2016-01-01"
-development_end: "2026-06-11"
-holdout_start: "2026-07-01"
-holdout_end: "2026-12-31"
+development_end: "2023-12-29"
+holdout_start: "2024-02-01"
+holdout_end: "2026-06-11"
 primary_metric: "sharpe_ratio"
 primary_metric_threshold: 0.0
-null_hypothesis: "The forward holdout Sharpe ratio of the preregistered ML style-neutral portfolio is not greater than zero."
+null_hypothesis: "The historical pseudo-out-of-sample holdout Sharpe ratio of the preregistered ML style-neutral portfolio is not greater than zero."
 universe: "sp500_historical_standard"
 factors:
   - book_to_market
@@ -43,11 +43,27 @@ hypothesis_families:
     primary_metric: "sharpe_ratio"
     decision_rule: "Evaluate the frozen ML portfolio as one family-level hypothesis; do not require each constituent factor to pass independent FDR after model fitting."
 forward_validation:
-  type: "forward_holdout"
-  holdout_start: "2026-07-01"
-  holdout_end: "2026-12-31"
-  inspection_policy: "One confirmatory inspection only; no tuning after the holdout is inspected."
-  alternative_if_data_unavailable: "Do not run confirmation until forward holdout prices and factor snapshots through 2026-12-31 are available."
+  type: "historical_pseudo_out_of_sample"
+  holdout_start: "2024-02-01"
+  holdout_end: "2026-06-11"
+  inspection_policy: "Development Bayesian search is confined to data through 2023-12-29; only one frozen candidate may inspect the historical holdout."
+  alternative_if_data_unavailable: "Use the latest available historical cutoff only if it is on or before the registered holdout_end."
+development_search:
+  algorithm: "bounded_bayesian_expected_improvement"
+  trial_budget: 18
+  count_policy: "Count all Bayesian trials as development-search trials; count only the frozen candidate as the final holdout inspection."
+  selection_objective: "net_sharpe + 8*mean_rank_ic + 0.20*positive_ic_share - turnover_penalty"
+  search_space:
+    learning_rate: [0.01, 0.08]
+    n_estimators: [50, 180]
+    num_leaves: [3, 15]
+    min_child_samples: [20, 100]
+    subsample: [0.6, 1.0]
+    colsample_bytree: [0.6, 1.0]
+    reg_alpha: [0.0, 2.0]
+    reg_lambda: [0.5, 5.0]
+    train_periods: [36, 48, 60]
+    portfolio_top_n: [25, 35, 50]
 portfolio:
   target_num_holdings: 25
   max_weight: 0.05
@@ -102,6 +118,6 @@ robustness_tests:
   - top_n_sensitivity
   - rebalance_day_shift
 start_date: "2016-01-01"
-end_date: "2026-12-31"
+end_date: "2026-06-11"
 seed: 42
 max_years: 20

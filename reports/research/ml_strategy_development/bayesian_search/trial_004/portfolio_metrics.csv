@@ -1,0 +1,2 @@
+model_type,periods,gross_total_return,net_total_return,net_sharpe,average_turnover,transaction_cost_bps
+lightgbm,60,1.1919097684046727,1.1314689345043054,0.7680320694796852,0.47133333333333344,10.0

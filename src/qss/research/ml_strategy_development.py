@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import warnings
 from copy import deepcopy
 from dataclasses import dataclass
 from pathlib import Path
@@ -9,12 +10,16 @@ from typing import Callable
 import numpy as np
 import pandas as pd
 import yaml
+from scipy.stats import norm
+from sklearn.exceptions import ConvergenceWarning
+from sklearn.gaussian_process import GaussianProcessRegressor
+from sklearn.gaussian_process.kernels import ConstantKernel, Matern, WhiteKernel
 
 from qss.backtest.engine import _prepare_ledger_market_data
 from qss.config.schema import AppConfig, MLConfig
 from qss.data.storage import resolve_path, write_csv, write_parquet
 from qss.ingestion.fama_french import load_fama_french_daily
-from qss.model.evaluation import evaluate_walk_forward
+from qss.model.evaluation import evaluate_walk_forward, fit_holdout_predictions
 from qss.research.portfolio_evaluation import simulate_score_portfolio
 from qss.research.statistics import (
     block_bootstrap_summary,
@@ -24,6 +29,9 @@ from qss.research.statistics import (
 
 DEFAULT_SOURCE_RUN_ID = "20260613T115415Z-backtest-01e41c77"
 DEFAULT_OUTPUT_DIR = Path("reports/research/ml_strategy_development")
+HISTORICAL_DEVELOPMENT_END = "2023-12-29"
+HISTORICAL_HOLDOUT_START = "2024-02-01"
+HISTORICAL_HOLDOUT_END = "2026-06-11"
 
 BEST_VALUE_LOW_RISK_FACTORS = [
     "book_to_market",
@@ -58,6 +66,19 @@ BEST_LIGHTGBM_PARAMETERS = {
     "random_state": 42,
     "verbosity": -1,
 }
+
+BAYESIAN_SEARCH_DIMENSIONS = [
+    {"name": "learning_rate", "kind": "float", "low": 0.01, "high": 0.08, "scale": "log"},
+    {"name": "n_estimators", "kind": "int", "low": 50, "high": 180},
+    {"name": "num_leaves", "kind": "int", "low": 3, "high": 15},
+    {"name": "min_child_samples", "kind": "int", "low": 20, "high": 100},
+    {"name": "subsample", "kind": "float", "low": 0.6, "high": 1.0},
+    {"name": "colsample_bytree", "kind": "float", "low": 0.6, "high": 1.0},
+    {"name": "reg_alpha", "kind": "float", "low": 0.0, "high": 2.0},
+    {"name": "reg_lambda", "kind": "float", "low": 0.5, "high": 5.0},
+    {"name": "train_periods", "kind": "choice", "choices": [36, 48, 60]},
+    {"name": "portfolio_top_n", "kind": "choice", "choices": [25, 35, 50]},
+]
 
 
 @dataclass(frozen=True)
@@ -273,6 +294,43 @@ def configured_ml() -> MLConfig:
     )
 
 
+def configured_ml_candidate(
+    parameters: dict[str, float | int],
+    *,
+    train_periods: int = 60,
+    portfolio_top_n: int = 25,
+) -> MLConfig:
+    model_parameters = {
+        "n_estimators": int(parameters["n_estimators"]),
+        "learning_rate": float(parameters["learning_rate"]),
+        "num_leaves": int(parameters["num_leaves"]),
+        "min_child_samples": int(parameters["min_child_samples"]),
+        "subsample": float(parameters["subsample"]),
+        "colsample_bytree": float(parameters["colsample_bytree"]),
+        "reg_alpha": float(parameters["reg_alpha"]),
+        "reg_lambda": float(parameters["reg_lambda"]),
+        "random_state": 42,
+        "verbosity": -1,
+    }
+    return MLConfig(
+        enabled=True,
+        model_type="lightgbm",
+        target="cross_sectional_rank",
+        parameters=model_parameters,
+        portfolio_top_n=int(portfolio_top_n),
+        transaction_cost_bps=10.0,
+        walk_forward={
+            "train_periods": int(train_periods),
+            "min_train_periods": 12,
+            "test_periods": 3,
+            "step_periods": 3,
+            "rolling": True,
+            "purge": True,
+            "embargo_days": 5,
+        },
+    )
+
+
 def configured_portfolio_config(
     source_config: AppConfig,
     *,
@@ -451,6 +509,394 @@ def _load_best_predictions(path: Path) -> pd.DataFrame:
     frame = pd.read_csv(path)
     frame["date"] = pd.to_datetime(frame["date"]).dt.normalize()
     return frame
+
+
+def _decode_search_vector(vector: np.ndarray) -> dict[str, float | int]:
+    decoded: dict[str, float | int] = {}
+    for value, dimension in zip(vector, BAYESIAN_SEARCH_DIMENSIONS, strict=True):
+        value = float(np.clip(value, 0.0, 1.0))
+        name = str(dimension["name"])
+        kind = str(dimension["kind"])
+        if kind == "choice":
+            choices = list(dimension["choices"])
+            index = min(int(np.floor(value * len(choices))), len(choices) - 1)
+            decoded[name] = int(choices[index])
+            continue
+        low = float(dimension["low"])
+        high = float(dimension["high"])
+        if dimension.get("scale") == "log":
+            raw = float(np.exp(np.log(low) + value * (np.log(high) - np.log(low))))
+        else:
+            raw = low + value * (high - low)
+        decoded[name] = int(round(raw)) if kind == "int" else float(raw)
+    return decoded
+
+
+def _candidate_key(candidate: dict[str, float | int]) -> str:
+    return json.dumps(candidate, sort_keys=True, separators=(",", ":"))
+
+
+def _search_objective(summary: dict[str, float | str]) -> float:
+    rank_ic = float(summary.get("mean_rank_ic", np.nan))
+    sharpe = float(summary.get("net_sharpe", np.nan))
+    positive_share = float(summary.get("positive_rank_ic_share", np.nan))
+    turnover = float(summary.get("average_turnover", np.nan))
+    if not np.isfinite(rank_ic) or not np.isfinite(sharpe):
+        return -1_000.0
+    turnover_penalty = max(0.0, turnover - 0.45) * 1.5 if np.isfinite(turnover) else 0.5
+    share_bonus = 0.20 * positive_share if np.isfinite(positive_share) else 0.0
+    return float(sharpe + 8.0 * rank_ic + share_bonus - turnover_penalty)
+
+
+def _expected_improvement(
+    model: GaussianProcessRegressor,
+    candidates: np.ndarray,
+    best_score: float,
+) -> np.ndarray:
+    mean, std = model.predict(candidates, return_std=True)
+    std = np.maximum(std, 1e-9)
+    improvement = mean - best_score
+    z = improvement / std
+    return improvement * norm.cdf(z) + std * norm.pdf(z)
+
+
+def _next_bayesian_vector(
+    observed_vectors: list[np.ndarray],
+    observed_scores: list[float],
+    rng: np.random.Generator,
+    *,
+    pool_size: int = 512,
+) -> np.ndarray:
+    if len(observed_vectors) < 3:
+        return rng.random(len(BAYESIAN_SEARCH_DIMENSIONS))
+    x = np.vstack(observed_vectors)
+    y = np.asarray(observed_scores, dtype=float)
+    kernel = ConstantKernel(1.0, constant_value_bounds="fixed") * Matern(
+        length_scale=np.ones(x.shape[1]),
+        nu=2.5,
+    ) + WhiteKernel(noise_level=1e-4)
+    model = GaussianProcessRegressor(
+        kernel=kernel,
+        alpha=1e-6,
+        normalize_y=True,
+        random_state=42,
+        n_restarts_optimizer=1,
+    )
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore", ConvergenceWarning)
+        model.fit(x, y)
+    pool = rng.random((pool_size, len(BAYESIAN_SEARCH_DIMENSIONS)))
+    expected = _expected_improvement(model, pool, float(np.nanmax(y)))
+    return pool[int(np.nanargmax(expected))]
+
+
+def run_bayesian_parameter_search(
+    factor_values: pd.DataFrame,
+    labels: pd.DataFrame,
+    *,
+    output_dir: Path,
+    max_trials: int = 18,
+    initial_random_trials: int = 6,
+    seed: int = 42,
+) -> tuple[pd.DataFrame, MLConfig]:
+    rng = np.random.default_rng(seed)
+    search_root = output_dir / "bayesian_search"
+    search_root.mkdir(parents=True, exist_ok=True)
+    observed_vectors: list[np.ndarray] = []
+    observed_scores: list[float] = []
+    seen: set[str] = set()
+    rows: list[dict] = []
+    dev_cutoff = pd.Timestamp(HISTORICAL_DEVELOPMENT_END)
+    dev_factors = factor_values.loc[pd.to_datetime(factor_values["date"]) <= dev_cutoff].copy()
+    dev_labels = labels.loc[pd.to_datetime(labels["date"]) <= dev_cutoff].copy()
+    for trial in range(1, max_trials + 1):
+        for _ in range(100):
+            if trial <= initial_random_trials:
+                vector = rng.random(len(BAYESIAN_SEARCH_DIMENSIONS))
+            else:
+                vector = _next_bayesian_vector(observed_vectors, observed_scores, rng)
+            candidate = _decode_search_vector(vector)
+            key = _candidate_key(candidate)
+            if key not in seen:
+                seen.add(key)
+                break
+        else:
+            raise RuntimeError("Unable to generate a unique Bayesian search candidate.")
+        train_periods = int(candidate.pop("train_periods"))
+        top_n = int(candidate.pop("portfolio_top_n"))
+        ml_config = configured_ml_candidate(
+            candidate,
+            train_periods=train_periods,
+            portfolio_top_n=top_n,
+        )
+        trial_dir = search_root / f"trial_{trial:03d}"
+        result = evaluate_walk_forward(dev_factors, dev_labels, ml_config, trial_dir)
+        summary = _evaluation_summary(f"bayes_trial_{trial:03d}", result)
+        score = _search_objective(summary)
+        row = {
+            "trial": trial,
+            "selection_method": "random" if trial <= initial_random_trials else "bayesian_ei",
+            "objective_score": score,
+            "train_periods": train_periods,
+            "portfolio_top_n": top_n,
+            **candidate,
+            **{key: value for key, value in summary.items() if key != "candidate"},
+        }
+        rows.append(row)
+        observed_vectors.append(vector)
+        observed_scores.append(score)
+        write_csv(pd.DataFrame(rows), output_dir / "bayesian_candidate_results.csv")
+    results = pd.DataFrame(rows).sort_values(
+        ["objective_score", "net_sharpe", "mean_rank_ic"],
+        ascending=False,
+    )
+    write_csv(results, output_dir / "bayesian_candidate_results.csv")
+    best = results.iloc[0].to_dict()
+    best_parameters = {
+        key: best[key]
+        for key in [
+            "learning_rate",
+            "n_estimators",
+            "num_leaves",
+            "min_child_samples",
+            "subsample",
+            "colsample_bytree",
+            "reg_alpha",
+            "reg_lambda",
+        ]
+    }
+    best_config = configured_ml_candidate(
+        best_parameters,
+        train_periods=int(best["train_periods"]),
+        portfolio_top_n=int(best["portfolio_top_n"]),
+    )
+    (output_dir / "best_bayesian_config.yaml").write_text(
+        yaml.safe_dump(best_config.model_dump(mode="json"), sort_keys=False),
+        encoding="utf-8",
+    )
+    return results, best_config
+
+
+def _historical_report_markdown(
+    *,
+    source_run_id: str,
+    output_dir: Path,
+    search_results: pd.DataFrame,
+    holdout_row: dict,
+    holdout_metadata: dict,
+    audit: dict,
+) -> str:
+    top = search_results.head(10).copy()
+    lines = [
+        "# ML Strategy Development",
+        "",
+        f"- Source run: `{source_run_id}`",
+        "- Research stage: `historical_pseudo_out_of_sample`",
+        "- Validation conditions changed: `true`",
+        "- Official live/paper claim: `false`",
+        f"- Development search algorithm: `{audit['development_search_algorithm']}`",
+        f"- Development search trials: `{audit['development_search_trials']}`",
+        f"- Final historical holdout candidates inspected: `{audit['final_holdout_trial_count']}`",
+        "",
+        "## Protocol",
+        "",
+        f"- Development window: `{audit['development_start']}` to `{audit['development_end']}`",
+        f"- Historical holdout window: `{audit['holdout_start']}` to `{audit['holdout_end']}`",
+        f"- Search family: `{audit['search_family']}`",
+        f"- Selection objective: `{audit['selection_objective']}`",
+        f"- Search-space precommitment: `{audit['search_space_precommitted']}`",
+        "",
+        "## Bayesian Development Search",
+        "",
+    ]
+    lines.append(
+        _markdown_table(
+            top,
+            [
+                "trial",
+                "objective_score",
+                "net_sharpe",
+                "net_total_return",
+                "mean_rank_ic",
+                "positive_rank_ic_share",
+                "average_turnover",
+                "portfolio_top_n",
+                "train_periods",
+            ],
+        )
+    )
+    holdout = pd.DataFrame([holdout_row])
+    lines.extend(["", "## Frozen Historical Holdout", ""])
+    lines.append(
+        _markdown_table(
+            holdout,
+            [
+                "candidate",
+                "sharpe_ratio",
+                "net_total_return",
+                "max_drawdown",
+                "beta",
+                "target_num_holdings",
+                "max_sector_weight",
+                "ff_alpha_annualized",
+                "ff_alpha_t_stat",
+                "deflated_sharpe_probability",
+                "passes_daily_dsp_gate",
+            ],
+        )
+    )
+    lines.extend(
+        [
+            "",
+            "## Holdout Model Fit",
+            "",
+            f"- Train rows: `{holdout_metadata.get('train_rows')}`",
+            f"- Test rows: `{holdout_metadata.get('test_rows')}`",
+            f"- Purged rows: `{holdout_metadata.get('purged_rows')}`",
+            f"- Mean holdout Rank IC: `{holdout_metadata.get('mean_rank_ic')}`",
+            "",
+            "## Audit",
+            "",
+            f"- Uses future unavailable data: `{audit['uses_future_unavailable_data']}`",
+            f"- Uses closed v1 holdout as a clean confirmation: `{audit['uses_closed_v1_holdout_as_clean_confirmation']}`",
+            f"- Purge enabled: `{audit['purge_enabled']}`",
+            f"- Embargo days: `{audit['embargo_days']}`",
+            f"- Development search counted separately from final holdout: `{audit['split_search_and_final_trials']}`",
+            f"- Output directory: `{output_dir.as_posix()}`",
+            "",
+            "## Research Readout",
+            "",
+            "- This is historical pseudo-out-of-sample evidence, not live forward validation.",
+            "- Bayesian optimization is treated as one bounded development search protocol.",
+            "- Only the frozen final candidate is counted as a final historical holdout inspection.",
+            "- Reusing the final historical holdout to replace the candidate would increment final trial count.",
+        ]
+    )
+    return "\n".join(lines) + "\n"
+
+
+def run_historical_bayesian_ml_strategy_development(
+    *,
+    source_run_id: str = DEFAULT_SOURCE_RUN_ID,
+    output_dir: Path = DEFAULT_OUTPUT_DIR,
+    max_trials: int = 18,
+) -> dict[str, Path | pd.DataFrame | dict]:
+    source_root = resolve_path(Path("reports/runs") / source_run_id)
+    output_root = resolve_path(output_dir)
+    output_root.mkdir(parents=True, exist_ok=True)
+
+    source_config = load_source_config(source_root)
+    run_manifest = json.loads((source_root / "manifest.json").read_text(encoding="utf-8"))
+    factors = pd.read_parquet(source_root / "feature_snapshot.parquet")
+    factors["date"] = pd.to_datetime(factors["date"]).dt.normalize()
+    model_factors = factors.loc[factors["factor_name"].isin(BEST_VALUE_LOW_RISK_FACTORS)].copy()
+    cross_sectional_labels = pd.read_parquet(source_root / "labels_cross_sectional_rank.parquet")
+    forward_labels = pd.read_parquet(source_root / "labels_forward_return.parquet")
+    labels = pd.concat([cross_sectional_labels, forward_labels], ignore_index=True)
+    prices = pd.read_parquet(
+        resolve_path(Path(source_config.paths.silver_data) / "prices" / "prices_daily.parquet")
+    )
+    prices["date"] = pd.to_datetime(prices["date"]).dt.normalize()
+    data_cutoff = str(run_manifest.get("data_cutoff", HISTORICAL_HOLDOUT_END))
+    holdout_end = min(pd.Timestamp(data_cutoff), pd.Timestamp(HISTORICAL_HOLDOUT_END))
+
+    search_results, best_config = run_bayesian_parameter_search(
+        model_factors,
+        labels,
+        output_dir=output_root,
+        max_trials=max_trials,
+    )
+    predictions, holdout_metadata = fit_holdout_predictions(
+        model_factors,
+        cross_sectional_labels,
+        best_config,
+        development_end=HISTORICAL_DEVELOPMENT_END,
+        holdout_start=HISTORICAL_HOLDOUT_START,
+        holdout_end=str(holdout_end.date()),
+    )
+    write_csv(predictions, output_root / "frozen_holdout_predictions.csv")
+    neutral_scores = style_neutralized_score_frame(predictions, model_factors)
+    write_csv(neutral_scores, output_root / "frozen_holdout_scores.csv")
+    market_data = _prepare_ledger_market_data(prices)
+    holdout_row = run_daily_simulation(
+        neutral_scores,
+        prices,
+        source_config,
+        name="frozen_bayesian_style_neutral_holdout",
+        output_dir=output_root,
+        end_date=str(holdout_end.date()),
+        max_sector_weight=0.15,
+        target_num_holdings=best_config.portfolio_top_n,
+        trial_count=1,
+        market_data=market_data,
+    )
+    holdout_row["final_holdout_trial_count"] = 1
+    results = pd.concat([search_results, pd.DataFrame([holdout_row])], ignore_index=True)
+    write_csv(results, output_root / "experiment_results.csv")
+    audit = {
+        "source_run": source_run_id,
+        "generated_at": pd.Timestamp.now("UTC").isoformat(),
+        "research_stage": "historical_pseudo_out_of_sample",
+        "development_start": "2016-01-01",
+        "development_end": HISTORICAL_DEVELOPMENT_END,
+        "holdout_start": HISTORICAL_HOLDOUT_START,
+        "holdout_end": str(holdout_end.date()),
+        "validation_conditions_changed": True,
+        "official_confirmatory_claim": False,
+        "uses_future_unavailable_data": False,
+        "uses_closed_v1_holdout_as_clean_confirmation": False,
+        "development_search_algorithm": "bounded_bayesian_expected_improvement",
+        "development_search_trials": max_trials,
+        "final_holdout_trial_count": 1,
+        "split_search_and_final_trials": True,
+        "search_family": "value_low_risk_style_neutral_lightgbm",
+        "selection_objective": "net_sharpe + 8*mean_rank_ic + 0.20*positive_ic_share - turnover_penalty",
+        "search_space_precommitted": True,
+        "search_space": BAYESIAN_SEARCH_DIMENSIONS,
+        "best_config": best_config.model_dump(mode="json"),
+        "holdout_metadata": holdout_metadata,
+        "purge_enabled": best_config.walk_forward.purge,
+        "embargo_days": best_config.walk_forward.embargo_days,
+        "known_limits": [
+            "This is historical pseudo-out-of-sample evidence, not live forward validation.",
+            "The historical holdout calendar has been inspected by earlier project work; do not label it as pristine.",
+            "Development Bayesian trials are reported separately from final holdout inspection count.",
+        ],
+    }
+    _write_json(output_root / "audit.json", audit)
+    _write_json(output_root / "frozen_holdout_summary.json", holdout_row)
+    report = _historical_report_markdown(
+        source_run_id=source_run_id,
+        output_dir=output_root,
+        search_results=search_results,
+        holdout_row=holdout_row,
+        holdout_metadata=holdout_metadata,
+        audit=audit,
+    )
+    (output_root / "strategy_development_report.md").write_text(report, encoding="utf-8")
+    config_payload = {
+        "protocol": {
+            "research_stage": "historical_pseudo_out_of_sample",
+            "development_end": HISTORICAL_DEVELOPMENT_END,
+            "holdout_start": HISTORICAL_HOLDOUT_START,
+            "holdout_end": str(holdout_end.date()),
+            "development_search_trials": max_trials,
+            "final_holdout_trial_count": 1,
+        },
+        "model_factors": BEST_VALUE_LOW_RISK_FACTORS,
+        "style_exposures": STYLE_EXPOSURES,
+        "bayesian_search_dimensions": BAYESIAN_SEARCH_DIMENSIONS,
+        "best_ml_config": best_config.model_dump(mode="json"),
+    }
+    (output_root / "development_config.yaml").write_text(
+        yaml.safe_dump(config_payload, sort_keys=False),
+        encoding="utf-8",
+    )
+    return {
+        "output_dir": output_root,
+        "results": results,
+        "audit": audit,
+    }
 
 
 def _report_markdown(
@@ -735,7 +1181,7 @@ def run_ml_strategy_development(
 
 
 def main() -> None:
-    result = run_ml_strategy_development()
+    result = run_historical_bayesian_ml_strategy_development()
     print(result["output_dir"])
 
 

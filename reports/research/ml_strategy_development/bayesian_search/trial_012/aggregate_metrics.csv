@@ -1,0 +1,2 @@
+model_type,folds,mean_mse,mean_mae,mean_rank_ic
+lightgbm,20,0.07676670658796708,0.23893333763166186,0.005298000227818269

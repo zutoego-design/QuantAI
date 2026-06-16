@@ -1,3 +1,10 @@
+protocol:
+  research_stage: historical_pseudo_out_of_sample
+  development_end: '2023-12-29'
+  holdout_start: '2024-02-01'
+  holdout_end: '2026-06-11'
+  development_search_trials: 18
+  final_holdout_trial_count: 1
 model_factors:
 - book_to_market
 - earnings_yield
@@ -15,33 +22,68 @@ style_exposures:
 - beta_to_spy
 - realized_vol_252d
 - realized_vol_60d
-lightgbm_parameters:
-  n_estimators: 80
-  learning_rate: 0.03
-  num_leaves: 7
-  min_child_samples: 30
-  subsample: 0.9
-  colsample_bytree: 0.9
-  reg_alpha: 0.1
-  reg_lambda: 1.5
-  random_state: 42
-  verbosity: -1
-ml_config:
+bayesian_search_dimensions:
+- name: learning_rate
+  kind: float
+  low: 0.01
+  high: 0.08
+  scale: log
+- name: n_estimators
+  kind: int
+  low: 50
+  high: 180
+- name: num_leaves
+  kind: int
+  low: 3
+  high: 15
+- name: min_child_samples
+  kind: int
+  low: 20
+  high: 100
+- name: subsample
+  kind: float
+  low: 0.6
+  high: 1.0
+- name: colsample_bytree
+  kind: float
+  low: 0.6
+  high: 1.0
+- name: reg_alpha
+  kind: float
+  low: 0.0
+  high: 2.0
+- name: reg_lambda
+  kind: float
+  low: 0.5
+  high: 5.0
+- name: train_periods
+  kind: choice
+  choices:
+  - 36
+  - 48
+  - 60
+- name: portfolio_top_n
+  kind: choice
+  choices:
+  - 25
+  - 35
+  - 50
+best_ml_config:
   enabled: true
   model_type: lightgbm
   target: cross_sectional_rank
   parameters:
-    n_estimators: 80
-    learning_rate: 0.03
-    num_leaves: 7
-    min_child_samples: 30
-    subsample: 0.9
-    colsample_bytree: 0.9
-    reg_alpha: 0.1
-    reg_lambda: 1.5
+    n_estimators: 86
+    learning_rate: 0.055453866519742816
+    num_leaves: 4
+    min_child_samples: 67
+    subsample: 0.6907147878753861
+    colsample_bytree: 0.6319387443168342
+    reg_alpha: 1.2191228708553223
+    reg_lambda: 0.9434854629810787
     random_state: 42
     verbosity: -1
-  portfolio_top_n: 25
+  portfolio_top_n: 50
   transaction_cost_bps: 10.0
   walk_forward:
     train_periods: 60

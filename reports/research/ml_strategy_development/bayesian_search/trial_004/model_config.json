@@ -1,0 +1,28 @@
+{
+  "enabled": true,
+  "model_type": "lightgbm",
+  "target": "cross_sectional_rank",
+  "parameters": {
+    "n_estimators": 176,
+    "learning_rate": 0.04705299212830418,
+    "num_leaves": 7,
+    "min_child_samples": 50,
+    "subsample": 0.7878223245103232,
+    "colsample_bytree": 0.6757885436337143,
+    "reg_alpha": 0.2598430106709433,
+    "reg_lambda": 2.640672168016702,
+    "random_state": 42,
+    "verbosity": -1
+  },
+  "portfolio_top_n": 50,
+  "transaction_cost_bps": 10.0,
+  "walk_forward": {
+    "train_periods": 36,
+    "test_periods": 3,
+    "step_periods": 3,
+    "min_train_periods": 12,
+    "rolling": true,
+    "purge": true,
+    "embargo_days": 5
+  }
+}

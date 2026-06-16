@@ -1,28 +1,145 @@
 {
   "source_run": "20260613T115415Z-backtest-01e41c77",
-  "generated_at": "2026-06-16T12:55:13.774953+00:00",
-  "research_stage": "exploratory",
-  "validation_conditions_changed": false,
+  "generated_at": "2026-06-16T14:39:10.153930+00:00",
+  "research_stage": "historical_pseudo_out_of_sample",
+  "development_start": "2016-01-01",
+  "development_end": "2023-12-29",
+  "holdout_start": "2024-02-01",
+  "holdout_end": "2026-06-11",
+  "validation_conditions_changed": true,
   "official_confirmatory_claim": false,
-  "uses_closed_v1_holdout_as_confirmation": false,
-  "existing_ml_search_candidates": 59,
-  "new_exploratory_candidates": 11,
-  "cumulative_trial_count": 70,
-  "purge_enabled": true,
-  "embargo_days": 5,
-  "label_leakage_audit": {
-    "style_residual_rank_lgbm": {
-      "passed": true,
-      "rule": "max train label_end_time < test_start - embargo_days for every fold"
+  "uses_future_unavailable_data": false,
+  "uses_closed_v1_holdout_as_clean_confirmation": false,
+  "development_search_algorithm": "bounded_bayesian_expected_improvement",
+  "development_search_trials": 18,
+  "final_holdout_trial_count": 1,
+  "split_search_and_final_trials": true,
+  "search_family": "value_low_risk_style_neutral_lightgbm",
+  "selection_objective": "net_sharpe + 8*mean_rank_ic + 0.20*positive_ic_share - turnover_penalty",
+  "search_space_precommitted": true,
+  "search_space": [
+    {
+      "name": "learning_rate",
+      "kind": "float",
+      "low": 0.01,
+      "high": 0.08,
+      "scale": "log"
     },
-    "sector_relative_rank_lgbm": {
-      "passed": true,
-      "rule": "max train label_end_time < test_start - embargo_days for every fold"
+    {
+      "name": "n_estimators",
+      "kind": "int",
+      "low": 50,
+      "high": 180
+    },
+    {
+      "name": "num_leaves",
+      "kind": "int",
+      "low": 3,
+      "high": 15
+    },
+    {
+      "name": "min_child_samples",
+      "kind": "int",
+      "low": 20,
+      "high": 100
+    },
+    {
+      "name": "subsample",
+      "kind": "float",
+      "low": 0.6,
+      "high": 1.0
+    },
+    {
+      "name": "colsample_bytree",
+      "kind": "float",
+      "low": 0.6,
+      "high": 1.0
+    },
+    {
+      "name": "reg_alpha",
+      "kind": "float",
+      "low": 0.0,
+      "high": 2.0
+    },
+    {
+      "name": "reg_lambda",
+      "kind": "float",
+      "low": 0.5,
+      "high": 5.0
+    },
+    {
+      "name": "train_periods",
+      "kind": "choice",
+      "choices": [
+        36,
+        48,
+        60
+      ]
+    },
+    {
+      "name": "portfolio_top_n",
+      "kind": "choice",
+      "choices": [
+        25,
+        35,
+        50
+      ]
+    }
+  ],
+  "best_config": {
+    "enabled": true,
+    "model_type": "lightgbm",
+    "target": "cross_sectional_rank",
+    "parameters": {
+      "n_estimators": 86,
+      "learning_rate": 0.055453866519742816,
+      "num_leaves": 4,
+      "min_child_samples": 67,
+      "subsample": 0.6907147878753861,
+      "colsample_bytree": 0.6319387443168342,
+      "reg_alpha": 1.2191228708553223,
+      "reg_lambda": 0.9434854629810787,
+      "random_state": 42,
+      "verbosity": -1
+    },
+    "portfolio_top_n": 50,
+    "transaction_cost_bps": 10.0,
+    "walk_forward": {
+      "train_periods": 60,
+      "test_periods": 3,
+      "step_periods": 3,
+      "min_train_periods": 12,
+      "rolling": true,
+      "purge": true,
+      "embargo_days": 5
     }
   },
+  "holdout_metadata": {
+    "model_type": "lightgbm",
+    "train_start": "2016-01-29",
+    "train_end": "2023-11-30",
+    "test_start": "2024-02-29",
+    "test_end": "2026-04-30",
+    "train_rows": 40340,
+    "test_rows": 12746,
+    "purged_rows": 467,
+    "mean_rank_ic": 0.03906915412146355,
+    "feature_columns": [
+      "beta_to_spy",
+      "book_to_market",
+      "earnings_yield",
+      "free_cash_flow_yield",
+      "max_drawdown_252d",
+      "realized_vol_252d",
+      "realized_vol_60d",
+      "sales_yield"
+    ]
+  },
+  "purge_enabled": true,
+  "embargo_days": 5,
   "known_limits": [
-    "Development search only; not official confirmatory evidence.",
-    "Fresh v2 forward holdout starts 2026-07-01 and is unavailable on 2026-06-16.",
-    "Score neutralization reduces direct style ranking exposure but does not impose a hard beta-neutral optimizer constraint."
+    "This is historical pseudo-out-of-sample evidence, not live forward validation.",
+    "The historical holdout calendar has been inspected by earlier project work; do not label it as pristine.",
+    "Development Bayesian trials are reported separately from final holdout inspection count."
   ]
 }
